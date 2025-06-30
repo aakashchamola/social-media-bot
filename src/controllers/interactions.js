@@ -403,7 +403,7 @@ const createTask = async (req, res) => {
     const task = new Task(taskData);
     await task.save();
 
-    res.json({
+    res.status(201).json({
       success: true,
       message: 'Task created successfully',
       data: task

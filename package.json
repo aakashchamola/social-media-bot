@@ -9,7 +9,8 @@
     "setup": "node src/scripts/setup.js",
     "test": "node test-apis.js",
     "test:quick": "node quick-test.js",
-    "test:all": "npm run test",
+    "test:comprehensive": "node comprehensive-test.js",
+    "test:all": "npm run test:comprehensive",
     "lint": "echo \"Linting not configured\" && exit 0"
   },
   "keywords": ["social-media", "bot", "automation", "nodejs", "express", "twitter", "reddit", "instagram"],
