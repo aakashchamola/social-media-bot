@@ -1,5 +1,35 @@
 {
+  "name": "social-media-bot",
+  "version": "1.0.0",
+  "description": "A Node.js server that acts as a social media automation bot",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "setup": "node src/scripts/setup.js",
+    "test": "node test-apis.js",
+    "test:quick": "node quick-test.js",
+    "test:all": "npm run test",
+    "lint": "echo \"Linting not configured\" && exit 0"
+  },
+  "keywords": ["social-media", "bot", "automation", "nodejs", "express", "twitter", "reddit", "instagram"],
+  "author": "Social Media Bot Team",
+  "license": "MIT",
   "dependencies": {
-    "express": "^5.1.0"
+    "express": "^4.19.2",
+    "mongoose": "^8.7.0",
+    "dotenv": "^16.4.5",
+    "axios": "^1.7.7",
+    "node-cron": "^3.0.3",
+    "cors": "^2.8.5",
+    "body-parser": "^1.20.3",
+    "twitter-api-v2": "^1.17.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
   }
 }
