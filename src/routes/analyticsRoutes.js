@@ -33,7 +33,7 @@ router.get('/analytics/platform/:platform', async (req, res) => {
     const { platform } = req.params;
     const { timeRange = 30 } = req.query;
 
-    if (!['twitter', 'reddit', 'instagram'].includes(platform)) {
+    if (!['twitter', 'reddit', 'instagram', 'facebook'].includes(platform)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid platform'
@@ -61,14 +61,14 @@ router.get('/analytics/interactions', async (req, res) => {
   try {
     const { platform, timeRange = 24 } = req.query;
 
-    if (platform && !['twitter', 'reddit', 'instagram'].includes(platform)) {
+    if (platform && !['twitter', 'reddit', 'instagram', 'facebook'].includes(platform)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid platform'
       });
     }
 
-    const platforms = platform ? [platform] : ['twitter', 'reddit', 'instagram'];
+    const platforms = platform ? [platform] : ['twitter', 'reddit', 'instagram', 'facebook'];
     const analytics = {};
 
     for (const plt of platforms) {
@@ -607,6 +607,45 @@ router.get('/analytics/realtime', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch realtime analytics',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/analytics/summary - Get analytics summary
+router.get('/analytics/summary', async (req, res) => {
+  try {
+    const { timeRange = 7 } = req.query;
+    const since = new Date(Date.now() - parseInt(timeRange) * 24 * 60 * 60 * 1000);
+    
+    const [totalPosts, totalTasks, totalUsers, recentActivity] = await Promise.all([
+      Post.countDocuments({ createdAt: { $gte: since } }),
+      Task.countDocuments({ createdAt: { $gte: since } }),
+      User.countDocuments({ createdAt: { $gte: since } }),
+      Post.find({ createdAt: { $gte: since } })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select('platform content scheduledTime posted')
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        timeRange: `${timeRange} days`,
+        summary: {
+          totalPosts,
+          totalTasks,
+          totalUsers,
+          lastUpdated: new Date().toISOString()
+        },
+        recentActivity: recentActivity
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error fetching analytics summary:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch analytics summary',
       error: error.message
     });
   }

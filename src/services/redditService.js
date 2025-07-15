@@ -1,16 +1,10 @@
-const axios = require('axios');
+const snoowrap = require('snoowrap');
 
 class RedditService {
   constructor() {
-    this.accessToken = null;
-    this.tokenExpiry = null;
+    this.client = null;
     this.initialized = false;
-    this.baseURL = 'https://oauth.reddit.com';
-    this.authURL = 'https://www.reddit.com/api/v1/access_token';
-    
-    if (this.isConfigured()) {
-      this.initialize();
-    }
+    this.initialize();
   }
 
   // Check if service is properly configured
@@ -19,20 +13,26 @@ class RedditService {
       process.env.REDDIT_CLIENT_ID &&
       process.env.REDDIT_CLIENT_SECRET &&
       process.env.REDDIT_USERNAME &&
-      process.env.REDDIT_PASSWORD &&
-      process.env.REDDIT_USER_AGENT
+      process.env.REDDIT_PASSWORD
     );
   }
 
-  // Initialize Reddit authentication
-  async initialize() {
+  // Initialize Reddit client
+  initialize() {
     try {
       if (!this.isConfigured()) {
         console.log('⚠️ Reddit API credentials not configured');
         return;
       }
 
-      await this.authenticate();
+      this.client = new snoowrap({
+        userAgent: process.env.REDDIT_USER_AGENT || 'social-media-bot/1.0.0',
+        clientId: process.env.REDDIT_CLIENT_ID,
+        clientSecret: process.env.REDDIT_CLIENT_SECRET,
+        username: process.env.REDDIT_USERNAME,
+        password: process.env.REDDIT_PASSWORD
+      });
+
       this.initialized = true;
       console.log('✅ Reddit service initialized');
     } catch (error) {
@@ -41,99 +41,40 @@ class RedditService {
     }
   }
 
-  // Authenticate with Reddit API
-  async authenticate() {
-    try {
-      const auth = Buffer.from(
-        `${process.env.REDDIT_CLIENT_ID}:${process.env.REDDIT_CLIENT_SECRET}`
-      ).toString('base64');
-
-      const response = await axios.post(this.authURL, 
-        new URLSearchParams({
-          grant_type: 'password',
-          username: process.env.REDDIT_USERNAME,
-          password: process.env.REDDIT_PASSWORD
-        }), {
-          headers: {
-            'Authorization': `Basic ${auth}`,
-            'User-Agent': process.env.REDDIT_USER_AGENT,
-            'Content-Type': 'application/x-www-form-urlencoded'
-          }
-        }
-      );
-
-      this.accessToken = response.data.access_token;
-      this.tokenExpiry = Date.now() + (response.data.expires_in * 1000);
-      
-      console.log('🔑 Reddit authentication successful');
-    } catch (error) {
-      console.error('❌ Reddit authentication failed:', error);
-      throw error;
-    }
-  }
-
-  // Check if token needs refresh
-  async ensureAuthenticated() {
-    if (!this.accessToken || Date.now() >= this.tokenExpiry) {
-      await this.authenticate();
-    }
-  }
-
-  // Make authenticated request to Reddit API
-  async makeRequest(endpoint, method = 'GET', data = null) {
-    await this.ensureAuthenticated();
-
-    const config = {
-      method: method,
-      url: `${this.baseURL}${endpoint}`,
-      headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
-        'User-Agent': process.env.REDDIT_USER_AGENT,
-        'Content-Type': 'application/json'
-      }
-    };
-
-    if (data) {
-      config.data = data;
-    }
-
-    return await axios(config);
-  }
-
-  // Create a new post
-  async createPost(title, text = '', subreddit = 'test') {
+  // Create a new post (submission)
+  async createPost(title, content, subreddit, options = {}) {
     try {
       if (!this.initialized) {
         throw new Error('Reddit service not initialized');
       }
 
-      const postData = {
-        sr: subreddit,
-        kind: 'self',
-        title: title,
-        text: text,
-        api_type: 'json'
-      };
+      const { url = null, kind = 'text' } = options;
 
-      const response = await this.makeRequest('/api/submit', 'POST', postData);
-
-      if (response.data.json.errors && response.data.json.errors.length > 0) {
-        throw new Error(response.data.json.errors[0][1]);
+      let submission;
+      
+      if (url && kind === 'link') {
+        // Submit a link
+        submission = await this.client.getSubreddit(subreddit).submitLink({
+          title: title,
+          url: url
+        });
+      } else {
+        // Submit a text post
+        submission = await this.client.getSubreddit(subreddit).submitSelfpost({
+          title: title,
+          text: content
+        });
       }
-
-      const postId = response.data.json.data.name;
-      const postUrl = response.data.json.data.url;
 
       return {
         success: true,
-        postId: postId,
-        url: postUrl,
-        message: `Post created in r/${subreddit}`,
+        postId: submission.id,
+        message: `Posted to r/${subreddit} successfully`,
         metadata: {
+          postId: submission.id,
+          permalink: submission.permalink,
           subreddit: subreddit,
           title: title,
-          postId: postId,
-          url: postUrl,
           postedAt: new Date().toISOString()
         }
       };
@@ -148,19 +89,14 @@ class RedditService {
   }
 
   // Upvote a post
-  async upvotePost(postId) {
+  async likePost(postId) {
     try {
       if (!this.initialized) {
         throw new Error('Reddit service not initialized');
       }
 
-      const voteData = {
-        id: postId,
-        dir: 1, // 1 for upvote, -1 for downvote, 0 for no vote
-        api_type: 'json'
-      };
-
-      await this.makeRequest('/api/vote', 'POST', voteData);
+      const submission = await this.client.getSubmission(postId);
+      await submission.upvote();
 
       return {
         success: true,
@@ -183,28 +119,16 @@ class RedditService {
         throw new Error('Reddit service not initialized');
       }
 
-      const commentData = {
-        thing_id: postId,
-        text: commentText,
-        api_type: 'json'
-      };
-
-      const response = await this.makeRequest('/api/comment', 'POST', commentData);
-
-      if (response.data.json.errors && response.data.json.errors.length > 0) {
-        throw new Error(response.data.json.errors[0][1]);
-      }
-
-      const commentId = response.data.json.data.things[0].data.name;
+      const submission = await this.client.getSubmission(postId);
+      const comment = await submission.reply(commentText);
 
       return {
         success: true,
         message: `Commented on post ${postId}`,
         metadata: {
           postId: postId,
-          commentId: commentId,
-          commentText: commentText,
-          action: 'comment'
+          commentId: comment.id,
+          commentText: commentText
         }
       };
     } catch (error) {
@@ -223,12 +147,8 @@ class RedditService {
         throw new Error('Reddit service not initialized');
       }
 
-      const friendData = {
-        name: username,
-        api_type: 'json'
-      };
-
-      await this.makeRequest('/api/friend', 'POST', friendData);
+      const user = await this.client.getUser(username);
+      await user.friend();
 
       return {
         success: true,
@@ -247,7 +167,7 @@ class RedditService {
     }
   }
 
-  // Search for posts
+  // Search for posts in a subreddit
   async searchPosts(query, options = {}) {
     try {
       if (!this.initialized) {
@@ -255,127 +175,113 @@ class RedditService {
       }
 
       const {
-        subreddit = null,
+        subreddit = 'all',
+        maxResults = 10,
         sort = 'relevance',
-        time = 'all',
-        limit = 10
+        time = 'all'
       } = options;
 
-      let endpoint = '/search';
-      if (subreddit) {
-        endpoint = `/r/${subreddit}/search`;
-      }
-
-      const params = new URLSearchParams({
-        q: query,
+      const searchResults = await this.client.getSubreddit(subreddit).search({
+        query: query,
         sort: sort,
-        t: time,
-        limit: Math.min(limit, 100), // Reddit limit
-        type: 'link',
-        raw_json: 1
+        time: time,
+        limit: Math.min(maxResults, 100)
       });
 
-      if (subreddit) {
-        params.append('restrict_sr', 'true');
-      }
-
-      const response = await this.makeRequest(`${endpoint}?${params}`);
-      const posts = response.data.data.children || [];
-
-      // Process posts
-      const processedPosts = posts.map(post => ({
-        id: post.data.name,
-        title: post.data.title,
-        text: post.data.selftext,
-        author: post.data.author,
-        subreddit: post.data.subreddit,
-        score: post.data.score,
-        upvoteRatio: post.data.upvote_ratio,
-        numComments: post.data.num_comments,
-        createdAt: new Date(post.data.created_utc * 1000).toISOString(),
-        url: `https://reddit.com${post.data.permalink}`
+      const posts = await searchResults.map(post => ({
+        id: post.id,
+        title: post.title,
+        selftext: post.selftext,
+        author: post.author.name,
+        subreddit: post.subreddit.display_name,
+        score: post.score,
+        upvoteRatio: post.upvote_ratio,
+        numComments: post.num_comments,
+        createdUtc: post.created_utc,
+        url: post.url,
+        permalink: post.permalink
       }));
-
-      // Extract unique users
-      const users = [...new Set(posts.map(post => post.data.author))]
-        .filter(author => author && author !== '[deleted]')
-        .map(author => ({
-          id: author,
-          username: author,
-          displayName: author,
-          platform: 'reddit'
-        }));
 
       return {
         success: true,
-        posts: processedPosts,
-        users: users,
+        posts: posts,
         totalResults: posts.length,
-        query: query
+        query: query,
+        subreddit: subreddit
       };
     } catch (error) {
       console.error('❌ Error searching Reddit posts:', error);
       return {
         success: false,
         message: error.message,
-        posts: [],
-        users: []
+        posts: []
       };
     }
   }
 
-  // Get trending posts from popular subreddits
-  async getTrends() {
+  // Get hot posts from a subreddit
+  async getHotPosts(subreddit = 'all', options = {}) {
     try {
       if (!this.initialized) {
         throw new Error('Reddit service not initialized');
       }
 
-      // Get hot posts from r/all
-      const response = await this.makeRequest('/r/all/hot?limit=25');
-      const posts = response.data.data.children || [];
+      const { maxResults = 10 } = options;
 
-      // Extract trending topics/subreddits
-      const subredditCounts = {};
-      const topPosts = [];
-
-      posts.forEach(post => {
-        const subreddit = post.data.subreddit;
-        subredditCounts[subreddit] = (subredditCounts[subreddit] || 0) + 1;
-        
-        if (topPosts.length < 10) {
-          topPosts.push({
-            title: post.data.title,
-            subreddit: subreddit,
-            score: post.data.score,
-            comments: post.data.num_comments,
-            url: `https://reddit.com${post.data.permalink}`
-          });
-        }
+      const hotPosts = await this.client.getSubreddit(subreddit).getHot({
+        limit: Math.min(maxResults, 100)
       });
 
-      // Get top trending subreddits
-      const trendingSubreddits = Object.entries(subredditCounts)
-        .sort(([,a], [,b]) => b - a)
-        .slice(0, 10)
-        .map(([subreddit, count]) => ({
-          name: `r/${subreddit}`,
-          posts: count,
-          rank: Object.keys(subredditCounts).indexOf(subreddit) + 1
-        }));
+      const posts = await hotPosts.map(post => ({
+        id: post.id,
+        title: post.title,
+        selftext: post.selftext,
+        author: post.author.name,
+        subreddit: post.subreddit.display_name,
+        score: post.score,
+        upvoteRatio: post.upvote_ratio,
+        numComments: post.num_comments,
+        createdUtc: post.created_utc,
+        url: post.url,
+        permalink: post.permalink
+      }));
 
       return {
         success: true,
-        trends: trendingSubreddits,
-        topPosts: topPosts,
-        timestamp: new Date().toISOString()
+        posts: posts,
+        totalResults: posts.length,
+        subreddit: subreddit
       };
     } catch (error) {
-      console.error('❌ Error getting Reddit trends:', error);
+      console.error('❌ Error getting hot Reddit posts:', error);
       return {
         success: false,
         message: error.message,
-        trends: []
+        posts: []
+      };
+    }
+  }
+
+  // Get trending subreddits
+  async getTrendingSubreddits() {
+    try {
+      if (!this.initialized) {
+        throw new Error('Reddit service not initialized');
+      }
+
+      const trending = await this.client.getTrendingSubreddits();
+      
+      return {
+        success: true,
+        subreddits: trending,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('❌ Error getting trending subreddits:', error);
+      return {
+        success: false,
+        message: error.message,
+        subreddits: []
       };
     }
   }
@@ -387,28 +293,23 @@ class RedditService {
         throw new Error('Reddit service not initialized');
       }
 
-      const response = await this.makeRequest(`/user/${username}/about`);
-      const userData = response.data.data;
-
+      const user = await this.client.getUser(username);
+      
       return {
         success: true,
         user: {
-          id: userData.name,
-          username: userData.name,
-          displayName: userData.name,
-          karma: {
-            comment: userData.comment_karma,
-            link: userData.link_karma,
-            total: userData.total_karma
-          },
-          verified: userData.verified,
-          created: new Date(userData.created_utc * 1000).toISOString(),
-          isGold: userData.is_gold,
-          isMod: userData.is_mod
+          id: user.id,
+          name: user.name,
+          created: user.created_utc,
+          linkKarma: user.link_karma,
+          commentKarma: user.comment_karma,
+          isGold: user.is_gold,
+          isMod: user.is_mod,
+          verified: user.has_verified_email
         }
       };
     } catch (error) {
-      console.error('❌ Error getting Reddit user info:', error);
+      console.error('❌ Error getting user info:', error);
       return {
         success: false,
         message: error.message
@@ -416,50 +317,72 @@ class RedditService {
     }
   }
 
-  // Get posts from specific subreddit
-  async getSubredditPosts(subreddit, options = {}) {
+  // Get subreddit information
+  async getSubredditInfo(subredditName) {
     try {
       if (!this.initialized) {
         throw new Error('Reddit service not initialized');
       }
 
-      const {
-        sort = 'hot',
-        time = 'day',
-        limit = 25
-      } = options;
+      const subreddit = await this.client.getSubreddit(subredditName);
+      
+      return {
+        success: true,
+        subreddit: {
+          id: subreddit.id,
+          name: subreddit.display_name,
+          title: subreddit.title,
+          description: subreddit.public_description,
+          subscribers: subreddit.subscribers,
+          created: subreddit.created_utc,
+          nsfw: subreddit.over18,
+          language: subreddit.lang
+        }
+      };
+    } catch (error) {
+      console.error('❌ Error getting subreddit info:', error);
+      return {
+        success: false,
+        message: error.message
+      };
+    }
+  }
 
-      let endpoint = `/r/${subreddit}/${sort}`;
-      const params = new URLSearchParams({
-        limit: Math.min(limit, 100),
-        raw_json: 1
-      });
-
-      if (sort === 'top') {
-        params.append('t', time);
+  // Get user's posts
+  async getUserPosts(username, options = {}) {
+    try {
+      if (!this.initialized) {
+        throw new Error('Reddit service not initialized');
       }
 
-      const response = await this.makeRequest(`${endpoint}?${params}`);
-      const posts = response.data.data.children || [];
+      const { maxResults = 10, sort = 'new' } = options;
+
+      const user = await this.client.getUser(username);
+      const userPosts = await user.getSubmissions({
+        sort: sort,
+        limit: Math.min(maxResults, 100)
+      });
+
+      const posts = await userPosts.map(post => ({
+        id: post.id,
+        title: post.title,
+        selftext: post.selftext,
+        subreddit: post.subreddit.display_name,
+        score: post.score,
+        numComments: post.num_comments,
+        createdUtc: post.created_utc,
+        url: post.url,
+        permalink: post.permalink
+      }));
 
       return {
         success: true,
-        posts: posts.map(post => ({
-          id: post.data.name,
-          title: post.data.title,
-          text: post.data.selftext,
-          author: post.data.author,
-          score: post.data.score,
-          upvoteRatio: post.data.upvote_ratio,
-          numComments: post.data.num_comments,
-          createdAt: new Date(post.data.created_utc * 1000).toISOString(),
-          url: `https://reddit.com${post.data.permalink}`
-        })),
-        subreddit: subreddit,
-        totalResults: posts.length
+        posts: posts,
+        totalResults: posts.length,
+        username: username
       };
     } catch (error) {
-      console.error('❌ Error getting subreddit posts:', error);
+      console.error('❌ Error getting user posts:', error);
       return {
         success: false,
         message: error.message,
@@ -469,16 +392,24 @@ class RedditService {
   }
 
   // Get rate limit status
-  getRateLimitStatus() {
-    return {
-      configured: this.isConfigured(),
-      authenticated: this.initialized,
-      tokenExpiry: this.tokenExpiry,
-      limits: {
-        requests: { remaining: 60, reset: Date.now() + 60 * 1000 }, // Reddit allows 60 requests per minute
-        posts: { remaining: 10, reset: Date.now() + 60 * 1000 }
+  async getRateLimitStatus() {
+    try {
+      if (!this.initialized) {
+        return { configured: false };
       }
-    };
+
+      // Reddit has rate limits but snoowrap handles them automatically
+      return {
+        configured: true,
+        limits: {
+          requests: { remaining: 60, reset: Date.now() + 60 * 1000 },
+          posts: { remaining: 5, reset: Date.now() + 10 * 60 * 1000 }
+        }
+      };
+    } catch (error) {
+      console.error('❌ Error getting Reddit rate limit status:', error);
+      return { configured: false, error: error.message };
+    }
   }
 }
 

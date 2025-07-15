@@ -61,10 +61,10 @@ router.post('/schedule', async (req, res) => {
       });
     }
 
-    if (!['twitter', 'reddit', 'instagram'].includes(platform)) {
+    if (!['twitter', 'reddit', 'instagram', 'facebook'].includes(platform)) {
       return res.status(400).json({
         success: false,
-        message: 'Platform must be twitter, reddit, or instagram'
+        message: 'Platform must be twitter, reddit, instagram, or facebook'
       });
     }
 
@@ -351,10 +351,10 @@ router.post('/schedule/task', async (req, res) => {
       });
     }
 
-    if (!['twitter', 'reddit', 'instagram'].includes(platform)) {
+    if (!['twitter', 'reddit', 'instagram', 'facebook'].includes(platform)) {
       return res.status(400).json({
         success: false,
-        message: 'Platform must be twitter, reddit, or instagram'
+        message: 'Platform must be twitter, reddit, instagram, or facebook'
       });
     }
 

@@ -3,6 +3,8 @@ const Post = require('../models/Post');
 const Task = require('../models/Task');
 const { TwitterService } = require('../services/twitterService');
 const { RedditService } = require('../services/redditService');
+const { InstagramService } = require('../services/instagramService');
+const { FacebookService } = require('../services/facebookService');
 const { executeTask } = require('./interactions');
 const { scrapeData } = require('./analytics');
 
@@ -10,6 +12,8 @@ class Scheduler {
   constructor() {
     this.twitterService = new TwitterService();
     this.redditService = new RedditService();
+    this.instagramService = new InstagramService();
+    this.facebookService = new FacebookService();
     this.jobs = new Map();
   }
 

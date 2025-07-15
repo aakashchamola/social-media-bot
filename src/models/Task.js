@@ -9,7 +9,7 @@ const taskSchema = new mongoose.Schema({
   platform: {
     type: String,
     required: true,
-    enum: ['twitter', 'reddit', 'instagram']
+    enum: ['twitter', 'reddit', 'instagram', 'facebook']
   },
   target: {
     type: String, // Username, hashtag, or post ID

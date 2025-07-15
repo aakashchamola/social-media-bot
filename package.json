@@ -6,11 +6,14 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "setup": "node src/scripts/setup.js",
+    "setup": "node src/scripts/setup-new.js",
+    "setup:old": "node src/scripts/setup.js",
     "test": "node test-apis.js",
     "test:quick": "node quick-test.js",
     "test:comprehensive": "node comprehensive-test.js",
-    "test:all": "npm run test:comprehensive",
+    "test:complete": "node test-complete.js",
+    "test:platforms": "node test-platforms.js",
+    "test:all": "npm run test:complete",
     "lint": "echo \"Linting not configured\" && exit 0"
   },
   "keywords": ["social-media", "bot", "automation", "nodejs", "express", "twitter", "reddit", "instagram"],
@@ -24,7 +27,10 @@
     "node-cron": "^3.0.3",
     "cors": "^2.8.5",
     "body-parser": "^1.20.3",
-    "twitter-api-v2": "^1.17.2"
+    "twitter-api-v2": "^1.17.2",
+    "snoowrap": "^1.23.0",
+    "fb": "^2.0.0",
+    "instagram-graph-api": "^2.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
