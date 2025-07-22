@@ -2,12 +2,10 @@ const Task = require('../models/Task');
 const Post = require('../models/Post');
 const User = require('../models/User');
 const { TwitterService } = require('../services/twitterService');
-const { RedditService } = require('../services/redditService');
 
 class AnalyticsController {
   constructor() {
     this.twitterService = new TwitterService();
-    this.redditService = new RedditService();
   }
 
   // Get comprehensive analytics dashboard data
@@ -379,7 +377,7 @@ class AnalyticsController {
   // Get platform activity breakdown
   async getPlatformBreakdown(since) {
     try {
-      const platforms = ['twitter', 'reddit', 'instagram'];
+      const platforms = ['twitter', 'instagram', 'facebook'];
       const breakdown = {};
 
       for (const platform of platforms) {
@@ -530,9 +528,14 @@ class AnalyticsController {
             result = await this.scrapeTwitterData(task);
           }
           break;
-        case 'reddit':
-          if (this.redditService.isConfigured()) {
-            result = await this.scrapeRedditData(task);
+        case 'instagram':
+          if (this.instagramService.isConfigured()) {
+            result = await this.scrapeInstagramData(task);
+          }
+          break;
+        case 'facebook':
+          if (this.facebookService.isConfigured()) {
+            result = await this.scrapeFacebookData(task);
           }
           break;
         default:

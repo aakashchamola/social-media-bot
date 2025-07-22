@@ -7,7 +7,7 @@ const Post = require('../models/Post');
 const User = require('../models/User');
 
 // GET /api/analytics - Get dashboard analytics
-router.get('/analytics', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { timeRange = 7 } = req.query;
     
@@ -28,7 +28,7 @@ router.get('/analytics', async (req, res) => {
 });
 
 // GET /api/analytics/platform/:platform - Get platform-specific analytics
-router.get('/analytics/platform/:platform', async (req, res) => {
+router.get('/platform/:platform', async (req, res) => {
   try {
     const { platform } = req.params;
     const { timeRange = 30 } = req.query;
@@ -57,7 +57,7 @@ router.get('/analytics/platform/:platform', async (req, res) => {
 });
 
 // GET /api/analytics/interactions - Get interaction analytics
-router.get('/analytics/interactions', async (req, res) => {
+router.get('/interactions', async (req, res) => {
   try {
     const { platform, timeRange = 24 } = req.query;
 
@@ -91,7 +91,7 @@ router.get('/analytics/interactions', async (req, res) => {
 });
 
 // GET /api/analytics/posts - Get post performance analytics
-router.get('/analytics/posts', async (req, res) => {
+router.get('/posts', async (req, res) => {
   try {
     const { platform, timeRange = 7, limit = 10 } = req.query;
     
@@ -194,7 +194,7 @@ router.get('/analytics/posts', async (req, res) => {
 });
 
 // GET /api/analytics/tasks - Get task execution analytics
-router.get('/analytics/tasks', async (req, res) => {
+router.get('/tasks', async (req, res) => {
   try {
     const { platform, type, timeRange = 7 } = req.query;
     
@@ -305,7 +305,7 @@ router.get('/analytics/tasks', async (req, res) => {
 });
 
 // GET /api/analytics/users - Get user analytics
-router.get('/analytics/users', async (req, res) => {
+router.get('/users', async (req, res) => {
   try {
     const { platform, timeRange = 30 } = req.query;
     
@@ -434,7 +434,7 @@ router.get('/analytics/export', async (req, res) => {
 });
 
 // GET /api/analytics/trends - Get trending topics and hashtags
-router.get('/analytics/trends', async (req, res) => {
+router.get('/trends', async (req, res) => {
   try {
     const { timeRange = 7, platform } = req.query;
     
@@ -543,7 +543,7 @@ router.get('/analytics/trends', async (req, res) => {
 });
 
 // GET /api/analytics/realtime - Get real-time statistics
-router.get('/analytics/realtime', async (req, res) => {
+router.get('/realtime', async (req, res) => {
   try {
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);

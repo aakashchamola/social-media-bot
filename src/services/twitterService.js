@@ -1,400 +1,489 @@
-const { TwitterApi } = require('twitter-api-v2');
 const axios = require('axios');
+const OAuth = require('oauth-1.0a');
+const crypto = require('crypto-js');
 
 class TwitterService {
   constructor() {
-    this.client = null;
-    this.initialized = false;
-    this.initialize();
+    this.apiKey = process.env.TWITTER_API_KEY;
+    this.apiSecret = process.env.TWITTER_API_SECRET;
+    this.accessToken = process.env.TWITTER_ACCESS_TOKEN;
+    this.accessTokenSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET;
+    this.bearerToken = process.env.TWITTER_BEARER_TOKEN;
+    
+    this.baseURL = 'https://api.twitter.com/2';
+    this.v1BaseURL = 'https://api.twitter.com/1.1';
+    
+    // Initialize OAuth for user context operations
+    this.oauth = OAuth({
+      consumer: { key: this.apiKey, secret: this.apiSecret },
+      signature_method: 'HMAC-SHA1',
+      hash_function(base_string, key) {
+        return crypto.HmacSHA1(base_string, key).toString(crypto.enc.Base64);
+      }
+    });
+
+    this.userTokens = {
+      key: this.accessToken,
+      secret: this.accessTokenSecret
+    };
+    
+    this.rateLimits = {
+      tweets: { limit: 300, window: 15 * 60 * 1000 }, // 300 per 15 minutes
+      users: { limit: 300, window: 15 * 60 * 1000 },
+      likes: { limit: 75, window: 15 * 60 * 1000 }
+    };
+    
+    console.log('✅ Twitter service initialized');
   }
 
-  // Initialize Twitter client
-  initialize() {
-    try {
-      if (!this.isConfigured()) {
-        console.log('⚠️ Twitter API credentials not configured');
-        return;
+  isConfigured() {
+    return !!(this.apiKey && this.apiSecret && this.accessToken && this.accessTokenSecret && 
+              !this.apiKey.includes('your_') && !this.apiSecret.includes('your_') &&
+              !this.accessToken.includes('your_') && !this.accessTokenSecret.includes('your_'));
+  }
+
+  async makeRequest(endpoint, options = {}) {
+    if (!this.isConfigured()) {
+      console.log('⚠️  Twitter API: Using mock mode - credentials not configured');
+      return this.mockResponse(endpoint, options);
+    }
+
+    // Determine if we need user context (OAuth 1.0a) or app context (Bearer token)
+    const needsUserContext = options.userContext !== false && (
+      endpoint.includes('/users/me') ||
+      endpoint.includes('/tweets') && options.method === 'POST' ||
+      endpoint.includes('/users/') && options.method === 'POST' ||
+      endpoint.includes('/likes') ||
+      endpoint.includes('/retweets') ||
+      endpoint.includes('/following')
+    );
+
+    let config = {
+      url: `${this.baseURL}${endpoint}`,
+      method: options.method || 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+      },
+      timeout: 10000
+    };
+
+    // Add data/params based on method
+    if (options.data) {
+      if (config.method === 'GET') {
+        config.params = options.data;
+      } else {
+        config.data = options.data;
       }
+    }
 
-      this.client = new TwitterApi({
-        appKey: process.env.TWITTER_API_KEY,
-        appSecret: process.env.TWITTER_API_SECRET,
-        accessToken: process.env.TWITTER_ACCESS_TOKEN,
-        accessSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
-      });
+    if (needsUserContext) {
+      // Use OAuth 1.0a for user context
+      const authHeader = this.oauth.toHeader(
+        this.oauth.authorize({
+          url: config.url,
+          method: config.method,
+          data: config.method === 'POST' ? config.data : config.params
+        }, this.userTokens)
+      );
+      config.headers.Authorization = authHeader.Authorization;
+    } else {
+      // Use Bearer token for app context
+      config.headers.Authorization = `Bearer ${this.bearerToken}`;
+    }
 
-      this.initialized = true;
-      console.log('✅ Twitter service initialized');
+    try {
+      const response = await axios(config);
+      return { success: true, data: response.data };
     } catch (error) {
-      console.error('❌ Failed to initialize Twitter service:', error);
-      this.initialized = false;
+      console.error('Twitter API Error:', error.response?.data || error.message);
+      return {
+        success: false,
+        error: error.response?.data?.detail || error.message,
+        status: error.response?.status
+      };
     }
   }
 
-  // Check if service is properly configured
-  isConfigured() {
-    return !!(
-      process.env.TWITTER_API_KEY &&
-      process.env.TWITTER_API_SECRET &&
-      process.env.TWITTER_ACCESS_TOKEN &&
-      process.env.TWITTER_ACCESS_TOKEN_SECRET
+  // Helper method for v1.1 API calls
+  async makeV1Request(endpoint, options = {}) {
+    if (!this.isConfigured()) {
+      console.log('⚠️  Twitter API: Using mock mode - credentials not configured');
+      return this.mockResponse(endpoint, options);
+    }
+
+    let config = {
+      url: `${this.v1BaseURL}${endpoint}`,
+      method: options.method || 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+      },
+      timeout: 10000
+    };
+
+    // Add data/params based on method
+    if (options.data) {
+      if (config.method === 'GET') {
+        config.params = options.data;
+      } else {
+        config.data = options.data;
+      }
+    }
+
+    // v1.1 API always requires OAuth 1.0a
+    const authHeader = this.oauth.toHeader(
+      this.oauth.authorize({
+        url: config.url,
+        method: config.method,
+        data: config.method === 'POST' ? config.data : config.params
+      }, this.userTokens)
     );
+    config.headers.Authorization = authHeader.Authorization;
+
+    try {
+      const response = await axios(config);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Twitter v1.1 API Error:', error.response?.data || error.message);
+      return {
+        success: false,
+        error: error.response?.data?.errors?.[0]?.message || error.response?.data?.error || error.message
+      };
+    }
   }
 
-  // Create a new post/tweet
-  async createPost(content, mediaUrls = []) {
-    try {
-      if (!this.initialized) {
-        throw new Error('Twitter service not initialized');
-      }
-
-      const tweetOptions = { text: content };
-
-      // Handle media uploads if provided
-      if (mediaUrls && mediaUrls.length > 0) {
-        const mediaIds = [];
-        
-        for (const mediaUrl of mediaUrls.slice(0, 4)) { // Twitter allows max 4 images
-          try {
-            const mediaResponse = await axios.get(mediaUrl, { responseType: 'arraybuffer' });
-            const mediaData = Buffer.from(mediaResponse.data);
-            
-            const uploadedMedia = await this.client.v1.uploadMedia(mediaData, { 
-              mimeType: mediaResponse.headers['content-type'] 
-            });
-            mediaIds.push(uploadedMedia);
-          } catch (mediaError) {
-            console.error('⚠️ Failed to upload media:', mediaError.message);
+  // Mock responses for when API is not configured
+  mockResponse(endpoint, options) {
+    console.log(`🎭 Mock Twitter API: ${options.method || 'GET'} ${endpoint}`);
+    
+    if (endpoint === '/users/me') {
+      return {
+        success: true,
+        data: {
+          data: {
+            id: 'mock_user_123',
+            username: 'mock_user',
+            name: 'Mock User'
           }
         }
-
-        if (mediaIds.length > 0) {
-          tweetOptions.media = { media_ids: mediaIds };
-        }
-      }
-
-      const tweet = await this.client.v2.tweet(tweetOptions);
-
+      };
+    }
+    
+    if (endpoint === '/tweets' && options.method === 'POST') {
       return {
         success: true,
-        postId: tweet.data.id,
-        message: 'Tweet posted successfully',
-        metadata: {
-          tweetId: tweet.data.id,
-          text: tweet.data.text,
-          postedAt: new Date().toISOString()
+        data: {
+          data: {
+            id: `mock_tweet_${Date.now()}`,
+            text: options.data?.text || 'Mock tweet'
+          }
         }
       };
-    } catch (error) {
-      console.error('❌ Error creating Twitter post:', error);
-      return {
-        success: false,
-        message: error.message,
-        error: error
-      };
     }
+
+    return { success: true, data: { data: {} } };
   }
 
-  // Like a post
-  async likePost(tweetId) {
+  async postTweet(content, options = {}) {
     try {
-      if (!this.initialized) {
-        throw new Error('Twitter service not initialized');
+      const tweetData = {
+        text: content
+      };
+
+      // Add media if provided
+      if (options.mediaIds && options.mediaIds.length > 0) {
+        tweetData.media = { media_ids: options.mediaIds };
       }
 
-      // Get authenticated user ID
-      const me = await this.client.v2.me();
-      await this.client.v2.like(me.data.id, tweetId);
-
-      return {
-        success: true,
-        message: `Liked tweet ${tweetId}`,
-        metadata: { tweetId, action: 'like' }
-      };
-    } catch (error) {
-      console.error('❌ Error liking Twitter post:', error);
-      return {
-        success: false,
-        message: error.message
-      };
-    }
-  }
-
-  // Retweet a post
-  async retweetPost(tweetId) {
-    try {
-      if (!this.initialized) {
-        throw new Error('Twitter service not initialized');
+      // Add reply settings
+      if (options.replySettings) {
+        tweetData.reply_settings = options.replySettings;
       }
 
-      const me = await this.client.v2.me();
-      await this.client.v2.retweet(me.data.id, tweetId);
+      const result = await this.makeRequest('/tweets', {
+        method: 'POST',
+        data: tweetData
+      });
 
-      return {
-        success: true,
-        message: `Retweeted ${tweetId}`,
-        metadata: { tweetId, action: 'retweet' }
-      };
+      if (result.success) {
+        console.log('✅ Tweet posted successfully:', result.data.data.id);
+        return {
+          success: true,
+          postId: result.data.data.id,
+          text: result.data.data.text
+        };
+      } else {
+        console.error('❌ Failed to post tweet:', result.error);
+        return { success: false, error: result.error };
+      }
     } catch (error) {
-      console.error('❌ Error retweeting:', error);
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('❌ Tweet posting error:', error.message);
+      return { success: false, error: error.message };
     }
   }
 
-  // Reply to a post
-  async replyToPost(tweetId, replyText) {
+  async likeTweet(tweetId) {
     try {
-      if (!this.initialized) {
-        throw new Error('Twitter service not initialized');
+      if (!this.isConfigured()) {
+        console.log('👍 Mock: Liking tweet:', tweetId);
+        return { success: true, tweetId, liked: true };
       }
 
-      const reply = await this.client.v2.reply(replyText, tweetId);
+      // Get authenticated user ID first
+      const userResult = await this.makeRequest('/users/me');
+      if (!userResult.success) {
+        return { success: false, error: 'Failed to get user info' };
+      }
 
-      return {
-        success: true,
-        message: `Replied to tweet ${tweetId}`,
-        metadata: {
-          originalTweetId: tweetId,
-          replyId: reply.data.id,
-          replyText: replyText
-        }
-      };
+      const userId = userResult.data.data.id;
+      
+      const result = await this.makeRequest(`/users/${userId}/likes`, {
+        method: 'POST',
+        data: { tweet_id: tweetId }
+      });
+
+      if (result.success) {
+        console.log('✅ Tweet liked successfully:', tweetId);
+        return { success: true, tweetId, liked: result.data.data.liked };
+      } else {
+        return { success: false, error: result.error };
+      }
     } catch (error) {
-      console.error('❌ Error replying to tweet:', error);
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('❌ Like tweet error:', error.message);
+      return { success: false, error: error.message };
     }
   }
 
-  // Follow a user
+  async retweet(tweetId) {
+    try {
+      if (!this.isConfigured()) {
+        console.log('🔄 Mock: Retweeting:', tweetId);
+        return { success: true, tweetId, retweeted: true };
+      }
+
+      const userResult = await this.makeRequest('/users/me');
+      if (!userResult.success) {
+        return { success: false, error: 'Failed to get user info' };
+      }
+
+      const userId = userResult.data.data.id;
+      
+      const result = await this.makeRequest(`/users/${userId}/retweets`, {
+        method: 'POST',
+        data: { tweet_id: tweetId }
+      });
+
+      if (result.success) {
+        console.log('✅ Tweet retweeted successfully:', tweetId);
+        return { success: true, tweetId, retweeted: result.data.data.retweeted };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('❌ Retweet error:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
   async followUser(username) {
     try {
-      if (!this.initialized) {
-        throw new Error('Twitter service not initialized');
+      if (!this.isConfigured()) {
+        console.log('👤 Mock: Following user:', username);
+        return { success: true, username, following: true };
       }
 
-      // Get user ID from username
-      const user = await this.client.v2.userByUsername(username);
-      const me = await this.client.v2.me();
+      // Get user ID by username
+      const userResult = await this.makeRequest(`/users/by/username/${username}`);
+      if (!userResult.success) {
+        return { success: false, error: 'User not found' };
+      }
+
+      const targetUserId = userResult.data.data.id;
       
-      await this.client.v2.follow(me.data.id, user.data.id);
-
-      return {
-        success: true,
-        message: `Followed @${username}`,
-        metadata: {
-          username: username,
-          userId: user.data.id,
-          action: 'follow'
-        }
-      };
-    } catch (error) {
-      console.error('❌ Error following user:', error);
-      return {
-        success: false,
-        message: error.message
-      };
-    }
-  }
-
-  // Search for posts
-  async searchPosts(query, options = {}) {
-    try {
-      if (!this.initialized) {
-        throw new Error('Twitter service not initialized');
+      // Get authenticated user ID
+      const meResult = await this.makeRequest('/users/me');
+      if (!meResult.success) {
+        return { success: false, error: 'Failed to get authenticated user info' };
       }
 
-      const {
-        maxResults = 10,
-        resultType = 'recent',
-        lang = 'en'
-      } = options;
+      const myUserId = meResult.data.data.id;
 
-      const searchResults = await this.client.v2.search(query, {
-        max_results: Math.min(maxResults, 100), // Twitter API limit
-        'tweet.fields': ['created_at', 'author_id', 'public_metrics', 'context_annotations'],
-        'user.fields': ['username', 'name', 'verified', 'public_metrics'],
-        expansions: ['author_id']
+      const result = await this.makeRequest(`/users/${myUserId}/following`, {
+        method: 'POST',
+        data: { target_user_id: targetUserId }
       });
 
-      const posts = searchResults.data.data || [];
-      const users = searchResults.data.includes?.users || [];
-
-      // Process posts
-      const processedPosts = posts.map(tweet => ({
-        id: tweet.id,
-        text: tweet.text,
-        authorId: tweet.author_id,
-        createdAt: tweet.created_at,
-        metrics: tweet.public_metrics,
-        url: `https://twitter.com/i/status/${tweet.id}`
-      }));
-
-      // Process users
-      const processedUsers = users.map(user => ({
-        id: user.id,
-        username: user.username,
-        displayName: user.name,
-        verified: user.verified,
-        followers: user.public_metrics?.followers_count || 0,
-        following: user.public_metrics?.following_count || 0,
-        postsCount: user.public_metrics?.tweet_count || 0
-      }));
-
-      return {
-        success: true,
-        posts: processedPosts,
-        users: processedUsers,
-        totalResults: posts.length,
-        query: query
-      };
+      if (result.success) {
+        console.log('✅ User followed successfully:', username);
+        return { success: true, username, following: result.data.data.following };
+      } else {
+        return { success: false, error: result.error };
+      }
     } catch (error) {
-      console.error('❌ Error searching Twitter posts:', error);
-      return {
-        success: false,
-        message: error.message,
-        posts: [],
-        users: []
-      };
+      console.error('❌ Follow user error:', error.message);
+      return { success: false, error: error.message };
     }
   }
 
-  // Get trending topics
-  async getTrends(woeid = 1) { // 1 = Worldwide
+  async searchTweets(query, options = {}) {
     try {
-      if (!this.initialized) {
-        throw new Error('Twitter service not initialized');
+      if (!this.isConfigured()) {
+        console.log('🔍 Mock: Searching tweets:', query);
+        const mockTweets = Array.from({ length: 5 }, (_, i) => ({
+          id: `mock_tweet_${i}`,
+          text: `Mock tweet about ${query} - ${i + 1}`,
+          author_id: `mock_user_${i}`,
+          created_at: new Date().toISOString(),
+          public_metrics: {
+            like_count: Math.floor(Math.random() * 100),
+            retweet_count: Math.floor(Math.random() * 50)
+          }
+        }));
+        return { success: true, tweets: mockTweets, meta: { result_count: 5 } };
       }
 
-      // Note: Trends endpoint requires API v1.1
-      const trends = await this.client.v1.trendsAvailable();
+      const params = new URLSearchParams({
+        query: query,
+        max_results: options.maxResults || 10,
+        'tweet.fields': 'created_at,author_id,public_metrics',
+        'user.fields': 'username,name,verified'
+      });
+
+      if (options.sinceId) params.append('since_id', options.sinceId);
+      if (options.untilId) params.append('until_id', options.untilId);
+
+      const result = await this.makeRequest(`/tweets/search/recent?${params}`);
+
+      if (result.success) {
+        return {
+          success: true,
+          tweets: result.data.data || [],
+          meta: result.data.meta
+        };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('❌ Search tweets error:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async getTrends(woeid = 1) {
+    try {
+      if (!this.isConfigured()) {
+        console.log('📈 Mock: Getting trending topics...');
+        const mockTrends = [
+          { name: '#Technology', volume: 125000 },
+          { name: '#AI', volume: 89000 },
+          { name: '#NodeJS', volume: 45000 },
+          { name: '#Programming', volume: 67000 },
+          { name: '#WebDev', volume: 34000 }
+        ];
+        return { success: true, trends: mockTrends };
+      }
+
+      // Note: Trends endpoint is part of Twitter API v1.1
+      const trendsUrl = `https://api.twitter.com/1.1/trends/place.json?id=${woeid}`;
       
-      // For this example, we'll return mock trending data
-      // In a real implementation, you'd use the actual trends endpoint
-      const mockTrends = [
-        { name: '#NodeJS', volume: 125000, rank: 1 },
-        { name: '#JavaScript', volume: 98000, rank: 2 },
-        { name: '#SocialMedia', volume: 75000, rank: 3 },
-        { name: '#API', volume: 52000, rank: 4 },
-        { name: '#Automation', volume: 38000, rank: 5 }
-      ];
-
-      return {
-        success: true,
-        trends: mockTrends,
-        location: 'Worldwide',
-        timestamp: new Date().toISOString()
-      };
-    } catch (error) {
-      console.error('❌ Error getting Twitter trends:', error);
-      return {
-        success: false,
-        message: error.message,
-        trends: []
-      };
-    }
-  }
-
-  // Get user information
-  async getUserInfo(username) {
-    try {
-      if (!this.initialized) {
-        throw new Error('Twitter service not initialized');
-      }
-
-      const user = await this.client.v2.userByUsername(username, {
-        'user.fields': ['created_at', 'description', 'public_metrics', 'verified', 'profile_image_url']
+      const result = await axios.get(trendsUrl, {
+        headers: {
+          'Authorization': `Bearer ${this.bearerToken}`
+        }
       });
 
-      return {
-        success: true,
-        user: {
-          id: user.data.id,
-          username: user.data.username,
-          displayName: user.data.name,
-          bio: user.data.description,
-          verified: user.data.verified,
-          followers: user.data.public_metrics?.followers_count || 0,
-          following: user.data.public_metrics?.following_count || 0,
-          postsCount: user.data.public_metrics?.tweet_count || 0,
-          profileImage: user.data.profile_image_url,
-          createdAt: user.data.created_at
-        }
-      };
+      if (result.data && result.data[0] && result.data[0].trends) {
+        return {
+          success: true,
+          trends: result.data[0].trends.slice(0, 10)
+        };
+      } else {
+        return { success: false, error: 'No trends data found' };
+      }
     } catch (error) {
-      console.error('❌ Error getting user info:', error);
-      return {
-        success: false,
-        message: error.message
-      };
+      console.error('❌ Get trends error:', error.message);
+      return { success: false, error: error.message };
     }
   }
 
-  // Get authenticated user's timeline
-  async getTimeline(options = {}) {
+  async getUserMetrics(username) {
     try {
-      if (!this.initialized) {
-        throw new Error('Twitter service not initialized');
+      if (!this.isConfigured()) {
+        console.log('📊 Mock: Getting user metrics for:', username);
+        return {
+          success: true,
+          user: {
+            id: 'mock_user_123',
+            username: username,
+            name: `Mock ${username}`,
+            public_metrics: {
+              followers_count: Math.floor(Math.random() * 10000),
+              following_count: Math.floor(Math.random() * 1000),
+              tweet_count: Math.floor(Math.random() * 5000)
+            }
+          }
+        };
       }
 
-      const {
-        maxResults = 10,
-        excludeReplies = true
-      } = options;
+      const result = await this.makeRequest(`/users/by/username/${username}?user.fields=public_metrics,verified,created_at`);
 
-      const me = await this.client.v2.me();
-      const timeline = await this.client.v2.userTimeline(me.data.id, {
-        max_results: Math.min(maxResults, 100),
-        exclude: excludeReplies ? ['replies'] : [],
-        'tweet.fields': ['created_at', 'public_metrics']
-      });
-
-      const posts = timeline.data.data || [];
-
-      return {
-        success: true,
-        posts: posts.map(tweet => ({
-          id: tweet.id,
-          text: tweet.text,
-          createdAt: tweet.created_at,
-          metrics: tweet.public_metrics
-        })),
-        totalResults: posts.length
-      };
+      if (result.success) {
+        return {
+          success: true,
+          user: result.data.data
+        };
+      } else {
+        return { success: false, error: result.error };
+      }
     } catch (error) {
-      console.error('❌ Error getting timeline:', error);
-      return {
-        success: false,
-        message: error.message,
-        posts: []
-      };
+      console.error('❌ Get user metrics error:', error.message);
+      return { success: false, error: error.message };
     }
   }
 
-  // Get rate limit status
-  async getRateLimitStatus() {
+  async getMyProfile() {
     try {
-      if (!this.initialized) {
-        return { configured: false };
+      const result = await this.makeRequest('/users/me?user.fields=public_metrics,verified,created_at');
+
+      if (result.success) {
+        return {
+          success: true,
+          profile: result.data.data
+        };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('❌ Get profile error:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Test connection
+  async testConnection() {
+    try {
+      if (!this.isConfigured()) {
+        return { 
+          success: true, 
+          message: 'Twitter API mock mode - credentials not configured',
+          mock: true 
+        };
       }
 
-      // This would return actual rate limit data in a real implementation
-      return {
-        configured: true,
-        limits: {
-          search: { remaining: 300, reset: Date.now() + 15 * 60 * 1000 },
-          post: { remaining: 100, reset: Date.now() + 24 * 60 * 60 * 1000 },
-          like: { remaining: 1000, reset: Date.now() + 24 * 60 * 60 * 1000 }
-        }
-      };
+      const result = await this.makeRequest('/users/me');
+      
+      if (result.success) {
+        return {
+          success: true,
+          message: 'Twitter API connection successful',
+          user: result.data.data
+        };
+      } else {
+        return { success: false, error: result.error };
+      }
     } catch (error) {
-      console.error('❌ Error getting rate limit status:', error);
-      return { configured: false, error: error.message };
+      return { success: false, error: error.message };
     }
   }
 }

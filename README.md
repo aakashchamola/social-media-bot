@@ -1,6 +1,6 @@
 # 🤖 Social Media Bot Server
 
-A powerful Node.js server that acts as a social media automation bot for Twitter, Reddit, and Instagram. Features include scheduled posting, automated interactions, data scraping, trend monitoring, and comprehensive analytics.
+A powerful Node.js server that acts as a social media automation bot for Twitter, Instagram, and Facebook. Features include scheduled posting, automated interactions, data scraping, trend monitoring, and comprehensive analytics.
 
 ## 🌟 Features
 
@@ -9,7 +9,7 @@ A powerful Node.js server that acts as a social media automation bot for Twitter
 - ✅ **Data Scraping** - Collect and analyze social media data
 - ✅ **Trend Monitoring** - Track trending topics and hashtags
 - ✅ **Analytics & Reporting** - Comprehensive metrics and insights
-- ✅ **Multi-Platform Support** - Twitter, Reddit, and Instagram
+- ✅ **Multi-Platform Support** - Twitter, Instagram, and Facebook
 - ✅ **Rate Limiting** - Respects API limits and platform rules
 - ✅ **RESTful API** - Easy integration with web interfaces
 
@@ -19,7 +19,7 @@ A powerful Node.js server that acts as a social media automation bot for Twitter
 - **Database**: MongoDB with Mongoose
 - **Scheduler**: node-cron for automated tasks
 - **HTTP Client**: Axios for API requests
-- **Social Media APIs**: Twitter API v2, Reddit API, Instagram Graph API
+- **Social Media APIs**: Twitter API v2, Instagram Graph API, Facebook Graph API
 
 ## 🚀 Quick Start
 
@@ -55,6 +55,38 @@ A powerful Node.js server that acts as a social media automation bot for Twitter
    ```
 
 The server will start on `http://localhost:3000`
+
+## 🧪 Testing
+
+All test files are located in the `/test` directory. The project uses a structured testing approach:
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run specific test file
+npm test twitter-api.test.js
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+### Test Structure
+
+- **Unit Tests**: `*.test.js` - Individual function/module tests
+- **Integration Tests**: `*.integration.test.js` - Component interaction tests
+- **API Tests**: `*.api.test.js` - External API integration tests
+- **E2E Tests**: `*.e2e.test.js` - End-to-end system tests
+
+### Platform-Specific Tests
+- Twitter: `twitter-*.test.js`
+- Instagram: `instagram-*.test.js` 
+- Facebook: `facebook-*.test.js`
+- Reddit: `reddit-*.test.js`
+
+**Important**: All test files must be created in the `/test` directory, not in the project root.
 
 ## 🔧 Configuration
 

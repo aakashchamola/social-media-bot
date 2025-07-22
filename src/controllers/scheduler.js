@@ -2,7 +2,6 @@ const cron = require('node-cron');
 const Post = require('../models/Post');
 const Task = require('../models/Task');
 const { TwitterService } = require('../services/twitterService');
-const { RedditService } = require('../services/redditService');
 const { InstagramService } = require('../services/instagramService');
 const { FacebookService } = require('../services/facebookService');
 const { executeTask } = require('./interactions');
@@ -11,7 +10,6 @@ const { scrapeData } = require('./analytics');
 class Scheduler {
   constructor() {
     this.twitterService = new TwitterService();
-    this.redditService = new RedditService();
     this.instagramService = new InstagramService();
     this.facebookService = new FacebookService();
     this.jobs = new Map();
@@ -116,10 +114,17 @@ class Scheduler {
           await this.saveTrends('twitter', twitterTrends);
         }
 
-        // Reddit trends
-        if (this.redditService.isConfigured()) {
-          const redditTrends = await this.redditService.getTrends();
-          await this.saveTrends('reddit', redditTrends);
+        // Instagram trends (hashtag trending)
+        if (this.instagramService.isConfigured()) {
+          // Instagram doesn't have public trending API, but we can monitor hashtags
+          const instagramData = await this.monitorInstagramHashtags();
+          await this.saveTrends('instagram', instagramData);
+        }
+
+        // Facebook trends (page insights)
+        if (this.facebookService.isConfigured()) {
+          const facebookInsights = await this.facebookService.getPageInsights();
+          await this.saveTrends('facebook', facebookInsights);
         }
         
         console.log('📊 Trend monitoring completed');
@@ -214,13 +219,19 @@ class Scheduler {
       switch (post.platform) {
         case 'twitter':
           if (this.twitterService.isConfigured()) {
-            result = await this.twitterService.createPost(post.content, post.mediaUrls);
+            result = await this.twitterService.postTweet(post.content, { mediaUrls: post.mediaUrls });
           }
           break;
           
-        case 'reddit':
-          if (this.redditService.isConfigured()) {
-            result = await this.redditService.createPost(post.content, post.metadata?.subreddit);
+        case 'instagram':
+          if (this.instagramService.isConfigured()) {
+            result = await this.instagramService.createPost(post.content, post.mediaUrls);
+          }
+          break;
+
+        case 'facebook':
+          if (this.facebookService.isConfigured()) {
+            result = await this.facebookService.createPost(post.content, post.mediaUrls);
           }
           break;
           
@@ -377,6 +388,48 @@ class Scheduler {
     }
     
     return status;
+  }
+
+  // Monitor Instagram hashtags for trending content
+  async monitorInstagramHashtags() {
+    try {
+      const trendingHashtags = [
+        'technology', 'ai', 'programming', 'nodejs', 'javascript', 
+        'socialmedia', 'automation', 'tech', 'innovation', 'digitalmarketing'
+      ];
+      
+      const hashtagData = [];
+      
+      for (const hashtag of trendingHashtags.slice(0, 3)) { // Limit to avoid rate limits
+        try {
+          const posts = await this.instagramService.searchPosts(hashtag, { maxResults: 5 });
+          if (posts.success && posts.posts.length > 0) {
+            hashtagData.push({
+              hashtag: hashtag,
+              postCount: posts.totalResults || posts.posts.length,
+              posts: posts.posts.slice(0, 3), // Top 3 posts
+              timestamp: new Date().toISOString()
+            });
+          }
+        } catch (error) {
+          console.error(`❌ Error monitoring hashtag #${hashtag}:`, error.message);
+        }
+      }
+      
+      return {
+        success: true,
+        data: hashtagData,
+        source: 'instagram_hashtags',
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('❌ Error monitoring Instagram hashtags:', error);
+      return {
+        success: false,
+        error: error.message,
+        data: []
+      };
+    }
   }
 }
 

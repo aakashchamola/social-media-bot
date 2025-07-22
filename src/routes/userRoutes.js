@@ -5,7 +5,7 @@ const Task = require('../models/Task');
 const { createInteractionTasks, findUsersForInteraction } = require('../controllers/interactions');
 
 // GET /api/users - Get all users with filtering and pagination
-router.get('/users', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const {
       platform,
@@ -59,7 +59,7 @@ router.get('/users', async (req, res) => {
 });
 
 // GET /api/users/search - Search users
-router.get('/users/search', async (req, res) => {
+router.get('/search', async (req, res) => {
   try {
     const { q, platform, limit = 20 } = req.query;
 
@@ -104,7 +104,7 @@ router.get('/users/search', async (req, res) => {
 });
 
 // GET /api/users/:id - Get specific user details
-router.get('/users/:id', async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { includeHistory = false } = req.query;
@@ -151,7 +151,7 @@ router.get('/users/:id', async (req, res) => {
 });
 
 // POST /api/users - Add or update a user
-router.post('/users', async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const {
       username,
@@ -175,10 +175,10 @@ router.post('/users', async (req, res) => {
       });
     }
 
-    if (!['twitter', 'reddit', 'instagram'].includes(platform)) {
+    if (!['twitter', 'instagram', 'facebook'].includes(platform)) {
       return res.status(400).json({
         success: false,
-        message: 'Platform must be twitter, reddit, or instagram'
+        message: 'Platform must be twitter, instagram, or facebook'
       });
     }
 
@@ -218,7 +218,7 @@ router.post('/users', async (req, res) => {
 });
 
 // PUT /api/users/:id - Update user information
-router.put('/users/:id', async (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -254,7 +254,7 @@ router.put('/users/:id', async (req, res) => {
 });
 
 // DELETE /api/users/:id - Delete a user
-router.delete('/users/:id', async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -282,7 +282,7 @@ router.delete('/users/:id', async (req, res) => {
 });
 
 // GET /api/users/platform/:platform - Get users by platform
-router.get('/users/platform/:platform', async (req, res) => {
+router.get('/platform/:platform', async (req, res) => {
   try {
     const { platform } = req.params;
     const { 
@@ -292,7 +292,7 @@ router.get('/users/platform/:platform', async (req, res) => {
       sortBy = 'followers'
     } = req.query;
 
-    if (!['twitter', 'reddit', 'instagram'].includes(platform)) {
+    if (!['twitter', 'instagram', 'facebook'].includes(platform)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid platform'
