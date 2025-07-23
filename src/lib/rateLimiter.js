@@ -8,9 +8,7 @@ class RateLimitManager {
     this.initializeLimiters();
   }
 
-  initiali        platform: {
-          twitter: this.getPlatformLimits('twitter')
-        },iters() {
+  initializeLimiters() {
     // Global API rate limiter
     this.limiters.set('global', new RateLimiterMemory({
       keyGenerator: (req) => req.ip,

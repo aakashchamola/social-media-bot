@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitter Bot Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fab fa-twitter"></i>
+                <span>Twitter Bot</span>
+            </div>
+            
+            <div class="nav-links">
+                <a href="#dashboard" class="nav-link active" data-section="dashboard">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </a>
+                <a href="#posts" class="nav-link" data-section="posts">
+                    <i class="fas fa-edit"></i> Posts
+                </a>
+                <a href="#analytics" class="nav-link" data-section="analytics">
+                    <i class="fas fa-chart-bar"></i> Analytics
+                </a>
+                <a href="#users" class="nav-link" data-section="users">
+                    <i class="fas fa-users"></i> Users
+                </a>
+                <a href="#explore" class="nav-link" data-section="explore">
+                    <i class="fas fa-search"></i> Explore
+                </a>
+                <a href="#settings" class="nav-link" data-section="settings">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+            </div>
+
+            <div class="api-status" id="apiStatus">
+                <div class="status-indicator" id="statusIndicator">
+                    <i class="fas fa-circle"></i>
+                </div>
+                <span id="statusText">Checking...</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="content-section active">
+            <div class="section-header">
+                <h1>Dashboard</h1>
+                <p>Welcome to your Twitter bot control center</p>
+            </div>
+
+            <!-- API Access Notice -->
+            <div class="api-notice" id="apiNotice">
+                <div class="notice-content">
+                    <i class="fas fa-info-circle"></i>
+                    <div class="notice-text">
+                        <h3>Essential API Access Detected</h3>
+                        <p>You're currently using Twitter's Essential access tier. Some features require upgraded API access.</p>
+                    </div>
+                    <a href="https://developer.twitter.com/en/portal/dashboard" target="_blank" class="upgrade-btn">
+                        <i class="fas fa-external-link-alt"></i> Upgrade Access
+                    </a>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="readOperations">0</h3>
+                        <p>API Read Operations (24h)</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalUsers">0</h3>
+                        <p>Tracked Users</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="analyticsGenerated">0</h3>
+                        <p>Analytics Reports</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="systemUptime">0s</h3>
+                        <p>System Uptime</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature Cards -->
+            <div class="features-grid">
+                <!-- Available Features -->
+                <div class="feature-category">
+                    <h2><i class="fas fa-check-circle text-green"></i> Available Features</h2>
+                    
+                    <div class="feature-card available">
+                        <div class="feature-header">
+                            <i class="fas fa-chart-bar"></i>
+                            <h3>Real-time Analytics</h3>
+                        </div>
+                        <p>Monitor your Twitter bot's performance and track system metrics in real-time.</p>
+                        <button class="feature-btn" onclick="showSection('analytics')">
+                            <i class="fas fa-arrow-right"></i> View Analytics
+                        </button>
+                    </div>
+
+                    <div class="feature-card available">
+                        <div class="feature-header">
+                            <i class="fas fa-users"></i>
+                            <h3>User Management</h3>
+                        </div>
+                        <p>Track and manage Twitter users, view profiles, and analyze follower metrics.</p>
+                        <button class="feature-btn" onclick="showSection('users')">
+                            <i class="fas fa-arrow-right"></i> Manage Users
+                        </button>
+                    </div>
+
+                    <div class="feature-card available">
+                        <div class="feature-header">
+                            <i class="fas fa-download"></i>
+                            <h3>Data Export</h3>
+                        </div>
+                        <p>Export your analytics data in JSON or CSV format for external analysis.</p>
+                        <button class="feature-btn" onclick="exportData()">
+                            <i class="fas fa-download"></i> Export Data
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Premium Features -->
+                <div class="feature-category">
+                    <h2><i class="fas fa-lock text-orange"></i> Premium Features (Requires Upgrade)</h2>
+                    
+                    <div class="feature-card premium">
+                        <div class="feature-header">
+                            <i class="fas fa-edit"></i>
+                            <h3>Automated Posting</h3>
+                            <span class="premium-badge">Premium</span>
+                        </div>
+                        <p>Schedule and automatically publish tweets to your Twitter account.</p>
+                        <button class="feature-btn premium-btn" onclick="showUpgradeModal('posting')">
+                            <i class="fas fa-lock"></i> Requires API Upgrade
+                        </button>
+                    </div>
+
+                    <div class="feature-card premium">
+                        <div class="feature-header">
+                            <i class="fas fa-heart"></i>
+                            <h3>Auto Interactions</h3>
+                            <span class="premium-badge">Premium</span>
+                        </div>
+                        <p>Automatically like, retweet, and reply to tweets based on your criteria.</p>
+                        <button class="feature-btn premium-btn" onclick="showUpgradeModal('interactions')">
+                            <i class="fas fa-lock"></i> Requires API Upgrade
+                        </button>
+                    </div>
+
+                    <div class="feature-card premium">
+                        <div class="feature-header">
+                            <i class="fas fa-trending-up"></i>
+                            <h3>Trend Monitoring</h3>
+                            <span class="premium-badge">Premium</span>
+                        </div>
+                        <p>Track trending topics and hashtags to optimize your content strategy.</p>
+                        <button class="feature-btn premium-btn" onclick="showUpgradeModal('trends')">
+                            <i class="fas fa-lock"></i> Requires API Upgrade
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Posts Section -->
+        <section id="posts" class="content-section">
+            <div class="section-header">
+                <h1>Post Management</h1>
+                <p>Schedule and manage your Twitter posts</p>
+            </div>
+
+            <div class="premium-overlay">
+                <div class="premium-content">
+                    <i class="fas fa-lock"></i>
+                    <h2>Post Scheduling Requires Premium Access</h2>
+                    <p>To schedule and publish tweets, you need Twitter API write permissions.</p>
+                    
+                    <div class="upgrade-info">
+                        <h3>What you need:</h3>
+                        <ul>
+                            <li><i class="fas fa-check"></i> Twitter Developer Elevated Access</li>
+                            <li><i class="fas fa-check"></i> Write permissions for your app</li>
+                            <li><i class="fas fa-check"></i> Valid OAuth tokens with write scope</li>
+                        </ul>
+                    </div>
+
+                    <div class="upgrade-actions">
+                        <a href="https://developer.twitter.com/en/portal/dashboard" target="_blank" class="upgrade-btn primary">
+                            <i class="fas fa-external-link-alt"></i> Upgrade Twitter API Access
+                        </a>
+                        <button onclick="testPostAccess()" class="upgrade-btn secondary">
+                            <i class="fas fa-test-tube"></i> Test Current Access
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Analytics Section -->
+        <section id="analytics" class="content-section">
+            <div class="section-header">
+                <h1>Analytics</h1>
+                <p>Monitor your bot's performance and insights</p>
+            </div>
+
+            <div class="analytics-controls">
+                <div class="time-selector">
+                    <label>Time Range:</label>
+                    <select id="analyticsTimeRange" onchange="loadAnalytics()">
+                        <option value="1">Last 24 hours</option>
+                        <option value="7" selected>Last 7 days</option>
+                        <option value="30">Last 30 days</option>
+                    </select>
+                </div>
+                <button onclick="refreshAnalytics()" class="refresh-btn">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+
+            <div class="analytics-grid">
+                <div class="analytics-card">
+                    <h3><i class="fas fa-chart-line"></i> System Performance</h3>
+                    <div class="metric-row">
+                        <span>API Calls (Read)</span>
+                        <strong id="analyticsCalls">0</strong>
+                    </div>
+                    <div class="metric-row">
+                        <span>Response Time</span>
+                        <strong id="analyticsResponseTime">0ms</strong>
+                    </div>
+                    <div class="metric-row">
+                        <span>Success Rate</span>
+                        <strong id="analyticsSuccessRate">100%</strong>
+                    </div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3><i class="fas fa-users"></i> User Metrics</h3>
+                    <div class="metric-row">
+                        <span>Total Users Tracked</span>
+                        <strong id="analyticsUserCount">0</strong>
+                    </div>
+                    <div class="metric-row">
+                        <span>New Users (Period)</span>
+                        <strong id="analyticsNewUsers">0</strong>
+                    </div>
+                    <div class="metric-row">
+                        <span>Growth Rate</span>
+                        <strong id="analyticsGrowthRate">0%</strong>
+                    </div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3><i class="fas fa-database"></i> Data Processing</h3>
+                    <div class="metric-row">
+                        <span>Records Processed</span>
+                        <strong id="analyticsProcessed">0</strong>
+                    </div>
+                    <div class="metric-row">
+                        <span>Storage Used</span>
+                        <strong id="analyticsStorage">0 MB</strong>
+                    </div>
+                    <div class="metric-row">
+                        <span>Last Update</span>
+                        <strong id="analyticsLastUpdate">Never</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="analyticsChart" width="400" height="200"></canvas>
+            </div>
+        </section>
+
+        <!-- Users Section -->
+        <section id="users" class="content-section">
+            <div class="section-header">
+                <h1>User Management</h1>
+                <p>Explore and analyze any Twitter user's profile and posts</p>
+            </div>
+
+            <!-- User Exploration Tools -->
+            <div class="exploration-tools">
+                <div class="tool-card">
+                    <h3><i class="fas fa-user-search"></i> Explore Any User</h3>
+                    <p>Get detailed profile information and recent tweets from any public Twitter user</p>
+                    <div class="user-lookup">
+                        <div class="input-group">
+                            <input type="text" id="usernameInput" placeholder="Enter username (e.g., elonmusk, nodejs)" class="lookup-input">
+                            <button onclick="exploreUser()" class="btn-primary">
+                                <i class="fas fa-search"></i> Explore User
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tool-card">
+                    <h3><i class="fas fa-hashtag"></i> Search Tweets</h3>
+                    <p>Search for tweets by keywords, hashtags, or mentions</p>
+                    <div class="tweet-search">
+                        <div class="input-group">
+                            <input type="text" id="tweetSearchInput" placeholder="Search tweets (e.g., #nodejs, @username)" class="lookup-input">
+                            <button onclick="searchTweets()" class="btn-primary">
+                                <i class="fas fa-search"></i> Search Tweets
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Profile Display -->
+            <div id="userProfileSection" class="user-profile-section" style="display: none;">
+                <div class="profile-header">
+                    <h3><i class="fas fa-user"></i> User Profile</h3>
+                    <button onclick="closeUserProfile()" class="close-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="userProfileContent" class="profile-content">
+                    <!-- Profile data will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Tweet Search Results -->
+            <div id="tweetSearchSection" class="tweet-search-section" style="display: none;">
+                <div class="search-header">
+                    <h3><i class="fas fa-twitter"></i> Tweet Search Results</h3>
+                    <button onclick="closeTweetSearch()" class="close-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="tweetSearchContent" class="search-content">
+                    <!-- Tweet search results will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Tracked Users -->
+            <div class="users-controls">
+                <div class="section-title">
+                    <h3><i class="fas fa-users"></i> Tracked Users</h3>
+                    <p>Users that have been saved to your database</p>
+                </div>
+                <div class="filter-controls">
+                    <select id="userPlatformFilter" onchange="filterUsers()">
+                        <option value="">All Platforms</option>
+                        <option value="twitter">Twitter</option>
+                    </select>
+                    <select id="userVerifiedFilter" onchange="filterUsers()">
+                        <option value="">All Users</option>
+                        <option value="true">Verified Only</option>
+                        <option value="false">Unverified Only</option>
+                    </select>
+                    <button onclick="refreshUsers()" class="refresh-btn">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div class="users-grid" id="usersGrid">
+                <!-- Users will be loaded here -->
+            </div>
+
+            <div class="pagination" id="usersPagination">
+                <!-- Pagination will be loaded here -->
+            </div>
+        </section>
+
+        <!-- Settings Section -->
+        <section id="settings" class="content-section">
+            <div class="section-header">
+                <h1>Settings</h1>
+                <p>Configure your Twitter bot settings</p>
+            </div>
+
+            <div class="settings-grid">
+                <div class="settings-card">
+                    <h3><i class="fas fa-key"></i> API Configuration</h3>
+                    <div class="setting-item">
+                        <label>Twitter API Status</label>
+                        <div class="status-display" id="settingsApiStatus">
+                            <span class="status-dot"></span>
+                            <span>Checking...</span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label>Access Level</label>
+                        <div class="access-level" id="settingsAccessLevel">
+                            <span class="badge">Essential</span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label>Rate Limit Status</label>
+                        <div class="rate-limit-info" id="settingsRateLimit">
+                            <span>300 / 300 requests remaining</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <h3><i class="fas fa-bell"></i> Notifications</h3>
+                    <div class="setting-item">
+                        <label>Email Notifications</label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="emailNotifications">
+                            <span class="slider"></span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label>Error Alerts</label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="errorAlerts" checked>
+                            <span class="slider"></span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label>Daily Reports</label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="dailyReports">
+                            <span class="slider"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <h3><i class="fas fa-shield-alt"></i> Security</h3>
+                    <div class="setting-item">
+                        <label>API Key Status</label>
+                        <div class="security-status">
+                            <i class="fas fa-check-circle text-green"></i>
+                            <span>Configured</span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label>Last Activity</label>
+                        <span id="lastActivity">Loading...</span>
+                    </div>
+                    <div class="setting-item">
+                        <label>Token Expiry</label>
+                        <span>No expiration (OAuth 1.0a)</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Explore Section -->
+        <section id="explore" class="content-section">
+            <div class="section-header">
+                <h1>Explore Twitter</h1>
+                <p>Search and discover users, tweets, and trending content</p>
+            </div>
+
+            <!-- Search Controls -->
+            <div class="explore-controls">
+                <div class="search-tabs">
+                    <button class="tab-btn active" data-tab="users" onclick="switchExploreTab('users')">
+                        <i class="fas fa-users"></i> Users
+                    </button>
+                    <button class="tab-btn" data-tab="tweets" onclick="switchExploreTab('tweets')">
+                        <i class="fas fa-comment"></i> Tweets
+                    </button>
+                </div>
+                
+                <div class="search-input-container">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="exploreSearchInput" placeholder="Search Twitter..." onkeypress="handleExploreSearch(event)">
+                    <button onclick="performExploreSearch()" class="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- User Search Results -->
+            <div id="userSearchResults" class="search-results active">
+                <div class="results-header">
+                    <h3><i class="fas fa-users"></i> User Search Results</h3>
+                    <span id="userResultsCount" class="results-count"></span>
+                </div>
+                
+                <div id="userResultsList" class="user-results-list">
+                    <div class="empty-state">
+                        <i class="fas fa-search"></i>
+                        <h3>Search for Twitter Users</h3>
+                        <p>Enter a username or name to find Twitter users and view their profiles</p>
+                        <div class="search-examples">
+                            <span class="example" onclick="searchExampleUser('elonmusk')">@elonmusk</span>
+                            <span class="example" onclick="searchExampleUser('jack')">@jack</span>
+                            <span class="example" onclick="searchExampleUser('twitter')">@twitter</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tweet Search Results -->
+            <div id="tweetSearchResults" class="search-results">
+                <div class="results-header">
+                    <h3><i class="fas fa-comment"></i> Tweet Search Results</h3>
+                    <span id="tweetResultsCount" class="results-count"></span>
+                </div>
+                
+                <div id="tweetResultsList" class="tweet-results-list">
+                    <div class="empty-state">
+                        <i class="fas fa-search"></i>
+                        <h3>Search for Tweets</h3>
+                        <p>Enter keywords to find recent tweets and conversations</p>
+                        <div class="search-examples">
+                            <span class="example" onclick="searchExampleTweet('AI')">AI</span>
+                            <span class="example" onclick="searchExampleTweet('technology')">technology</span>
+                            <span class="example" onclick="searchExampleTweet('programming')">programming</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Profile Modal -->
+            <div id="userProfileModal" class="modal">
+                <div class="modal-content user-profile-modal">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-user"></i> User Profile</h2>
+                        <button class="close-btn" onclick="closeUserProfileModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="user-profile-content" id="userProfileContent">
+                            <!-- User profile content will be loaded here -->
+                        </div>
+                        <div class="user-tweets-section">
+                            <h3><i class="fas fa-comment"></i> Recent Tweets</h3>
+                            <div id="userTweetsList" class="user-tweets-list">
+                                <!-- User tweets will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Upgrade Modal -->
+    <div id="upgradeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-crown"></i> Upgrade Required</h2>
+                <button class="close-btn" onclick="closeUpgradeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="upgrade-feature-info" id="upgradeFeatureInfo">
+                    <!-- Feature-specific upgrade info will be loaded here -->
+                </div>
+                
+                <div class="upgrade-steps">
+                    <h3>How to upgrade your Twitter API access:</h3>
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Visit Twitter Developer Portal</h4>
+                            <p>Go to your Twitter Developer Dashboard and select your app</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>Apply for Elevated Access</h4>
+                            <p>Fill out the application form describing your bot's purpose</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>Update Environment Variables</h4>
+                            <p>Once approved, regenerate your tokens with write permissions</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <a href="https://developer.twitter.com/en/portal/dashboard" target="_blank" class="upgrade-btn primary">
+                        <i class="fas fa-external-link-alt"></i> Go to Developer Portal
+                    </a>
+                    <button onclick="closeUpgradeModal()" class="upgrade-btn secondary">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="loading-spinner">
+        <div class="spinner"></div>
+        <span>Loading...</span>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="/script.js"></script>
+</body>
+</html>
+                    <strong>Limited API Access Detected</strong>
+                    <p>You're currently using Essential (Free) tier. Upgrade to Elevated Access for full functionality.</p>
+                </div>
+                <button class="upgrade-btn" onclick="showUpgradeModal()">
+                    <i class="fas fa-arrow-up"></i>
+                    Upgrade Guide
+                </button>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="section active">
+            <div class="section-header">
+                <h1>Dashboard</h1>
+                <p class="section-subtitle">Monitor your Twitter bot's performance and activity</p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="botStatus">Active</h3>
+                        <p>Bot Status</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="readOperations">0</h3>
+                        <p>Read Operations Today</p>
+                    </div>
+                </div>
+                <div class="stat-card locked">
+                    <div class="stat-icon">
+                        <i class="fas fa-edit"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>
+                            <i class="fas fa-lock premium-lock"></i>
+                            Premium
+                        </h3>
+                        <p>Posts Published</p>
+                    </div>
+                    <div class="premium-overlay">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                </div>
+                <div class="stat-card locked">
+                    <div class="stat-icon">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>
+                            <i class="fas fa-lock premium-lock"></i>
+                            Premium
+                        </h3>
+                        <p>Interactions Made</p>
+                    </div>
+                    <div class="premium-overlay">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Timeline -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Recent Activity</h3>
+                    <button class="btn-secondary" onclick="refreshActivity()">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh
+                    </button>
+                </div>
+                <div class="activity-timeline" id="activityTimeline">
+                    <!-- Activity items will be populated by JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Posts Section -->
+        <section id="posts" class="section">
+            <div class="section-header">
+                <h1>Post Management</h1>
+                <p class="section-subtitle">Schedule and manage your Twitter posts</p>
+                <button class="btn-primary premium-feature" onclick="showPremiumModal('post creation')">
+                    <i class="fas fa-plus"></i>
+                    Schedule Post
+                </button>
+            </div>
+
+            <!-- Scheduled Posts -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Scheduled Posts</h3>
+                    <div class="filters">
+                        <select class="filter-select">
+                            <option value="all">All Posts</option>
+                            <option value="pending">Pending</option>
+                            <option value="published">Published</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="posts-list" id="postsList">
+                    <div class="empty-state">
+                        <i class="fas fa-calendar-plus"></i>
+                        <h3>No posts scheduled</h3>
+                        <p>Post scheduling requires Elevated API access</p>
+                        <button class="btn-outline premium-feature" onclick="showPremiumModal('post scheduling')">
+                            Learn More
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Analytics Section -->
+        <section id="analytics" class="section">
+            <div class="section-header">
+                <h1>Analytics</h1>
+                <p class="section-subtitle">Analyze your Twitter performance and engagement</p>
+            </div>
+
+            <!-- Analytics Cards -->
+            <div class="analytics-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Profile Analytics</h3>
+                        <button class="btn-secondary" onclick="loadProfileAnalytics()">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
+                        </button>
+                    </div>
+                    <div class="analytics-content" id="profileAnalytics">
+                        <div class="loading-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Loading profile data...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card locked">
+                    <div class="card-header">
+                        <h3>Engagement Metrics</h3>
+                        <i class="fas fa-crown premium-icon"></i>
+                    </div>
+                    <div class="premium-content">
+                        <i class="fas fa-chart-line premium-chart"></i>
+                        <h4>Premium Analytics</h4>
+                        <p>Detailed engagement metrics available with Elevated API access</p>
+                        <button class="btn-premium" onclick="showPremiumModal('engagement analytics')">
+                            Upgrade to Access
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card locked">
+                    <div class="card-header">
+                        <h3>Growth Trends</h3>
+                        <i class="fas fa-crown premium-icon"></i>
+                    </div>
+                    <div class="premium-content">
+                        <i class="fas fa-trending-up premium-chart"></i>
+                        <h4>Premium Analytics</h4>
+                        <p>Follower growth and trend analysis available with elevated access</p>
+                        <button class="btn-premium" onclick="showPremiumModal('growth analytics')">
+                            Upgrade to Access
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactions Section -->
+        <section id="interactions" class="section">
+            <div class="section-header">
+                <h1>Interactions</h1>
+                <p class="section-subtitle">Manage automated interactions and user engagement</p>
+                <button class="btn-primary premium-feature" onclick="showPremiumModal('automated interactions')">
+                    <i class="fas fa-magic"></i>
+                    Create Task
+                </button>
+            </div>
+
+            <div class="interactions-grid">
+                <div class="card locked">
+                    <div class="card-header">
+                        <h3>Auto-Like Tasks</h3>
+                        <i class="fas fa-crown premium-icon"></i>
+                    </div>
+                    <div class="premium-content">
+                        <i class="fas fa-heart premium-chart"></i>
+                        <h4>Premium Feature</h4>
+                        <p>Automated liking requires write permissions</p>
+                        <button class="btn-premium" onclick="showPremiumModal('auto-like')">
+                            Upgrade Required
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card locked">
+                    <div class="card-header">
+                        <h3>Auto-Follow Tasks</h3>
+                        <i class="fas fa-crown premium-icon"></i>
+                    </div>
+                    <div class="premium-content">
+                        <i class="fas fa-user-plus premium-chart"></i>
+                        <h4>Premium Feature</h4>
+                        <p>Automated following requires write permissions</p>
+                        <button class="btn-premium" onclick="showPremiumModal('auto-follow')">
+                            Upgrade Required
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>User Search</h3>
+                        <button class="btn-secondary" onclick="searchUsers()">
+                            <i class="fas fa-search"></i>
+                            Search
+                        </button>
+                    </div>
+                    <div class="search-content">
+                        <input type="text" class="search-input" placeholder="Search for users..." id="userSearchInput">
+                        <div class="search-results" id="searchResults">
+                            <div class="empty-state">
+                                <i class="fas fa-search"></i>
+                                <p>Enter a username to search</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Settings Section -->
+        <section id="settings" class="section">
+            <div class="section-header">
+                <h1>Settings</h1>
+                <p class="section-subtitle">Configure your Twitter bot settings and API access</p>
+            </div>
+
+            <div class="settings-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>API Configuration</h3>
+                        <div class="status-indicator" id="apiStatusIndicator">
+                            <span class="status-dot warning"></span>
+                            Limited Access
+                        </div>
+                    </div>
+                    <div class="settings-content">
+                        <div class="setting-item">
+                            <label>API Access Level</label>
+                            <div class="access-level">
+                                <span class="badge warning">Essential (Free)</span>
+                                <button class="btn-outline" onclick="showUpgradeModal()">
+                                    Upgrade
+                                </button>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <label>Available Endpoints</label>
+                            <div class="endpoints-list">
+                                <div class="endpoint available">
+                                    <i class="fas fa-check"></i>
+                                    User Profile (Read)
+                                </div>
+                                <div class="endpoint available">
+                                    <i class="fas fa-check"></i>
+                                    User Search
+                                </div>
+                                <div class="endpoint unavailable">
+                                    <i class="fas fa-times"></i>
+                                    Tweet Posting
+                                </div>
+                                <div class="endpoint unavailable">
+                                    <i class="fas fa-times"></i>
+                                    Automated Interactions
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Bot Configuration</h3>
+                    </div>
+                    <div class="settings-content">
+                        <div class="setting-item">
+                            <label for="botStatus">Bot Status</label>
+                            <select id="botStatusSelect" class="setting-select">
+                                <option value="active">Active (Read-Only)</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label for="refreshInterval">Data Refresh Interval</label>
+                            <select id="refreshInterval" class="setting-select">
+                                <option value="5">5 minutes</option>
+                                <option value="15" selected>15 minutes</option>
+                                <option value="30">30 minutes</option>
+                                <option value="60">1 hour</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Premium Feature Modal -->
+    <div class="modal" id="premiumModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Premium Feature</h3>
+                <button class="modal-close" onclick="closePremiumModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="premium-info">
+                    <i class="fas fa-crown premium-icon-large"></i>
+                    <h4 id="premiumFeatureTitle">Feature Requires Elevated Access</h4>
+                    <p id="premiumFeatureDescription">This feature requires Twitter API Elevated access with write permissions.</p>
+                </div>
+                <div class="upgrade-steps">
+                    <h5>To enable this feature:</h5>
+                    <ol>
+                        <li>Visit <a href="https://developer.twitter.com/en/portal/dashboard" target="_blank">Twitter Developer Portal</a></li>
+                        <li>Select your app and click "Settings"</li>
+                        <li>Apply for "Elevated Access"</li>
+                        <li>Update your environment variables</li>
+                    </ol>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closePremiumModal()">Close</button>
+                <a href="https://developer.twitter.com/en/portal/dashboard" target="_blank" class="btn-primary">
+                    <i class="fas fa-external-link-alt"></i>
+                    Open Developer Portal
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upgrade Guide Modal -->
+    <div class="modal" id="upgradeModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>Twitter API Upgrade Guide</h3>
+                <button class="modal-close" onclick="closeUpgradeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="upgrade-guide">
+                    <div class="current-status">
+                        <h4><i class="fas fa-info-circle"></i> Current Status</h4>
+                        <div class="status-card warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <div>
+                                <strong>Essential Access (Free Tier)</strong>
+                                <p>Limited to read-only operations. Write operations (posting, liking, following) are not available.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="upgrade-options">
+                        <h4><i class="fas fa-arrow-up"></i> Upgrade Options</h4>
+                        
+                        <div class="option-card">
+                            <div class="option-header">
+                                <h5>Option 1: Elevated Access (Free)</h5>
+                                <span class="badge success">Recommended</span>
+                            </div>
+                            <div class="option-content">
+                                <ul>
+                                    <li>✅ Tweet posting and deletion</li>
+                                    <li>✅ Like, retweet, follow operations</li>
+                                    <li>✅ Higher rate limits</li>
+                                    <li>⏱️ 24-48 hour approval process</li>
+                                </ul>
+                                <p><strong>Requirements:</strong> Detailed use case description</p>
+                            </div>
+                        </div>
+
+                        <div class="option-card">
+                            <div class="option-header">
+                                <h5>Option 2: Basic Tier ($100/month)</h5>
+                                <span class="badge premium">Paid</span>
+                            </div>
+                            <div class="option-content">
+                                <ul>
+                                    <li>✅ All Elevated features</li>
+                                    <li>✅ Immediate access</li>
+                                    <li>✅ Higher rate limits</li>
+                                    <li>✅ Support for up to 3 apps</li>
+                                </ul>
+                                <p><strong>Best for:</strong> Production applications</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="upgrade-steps">
+                        <h4><i class="fas fa-list-ol"></i> Upgrade Steps</h4>
+                        <ol>
+                            <li>
+                                <strong>Visit Developer Portal</strong>
+                                <p>Go to <a href="https://developer.twitter.com/en/portal/dashboard" target="_blank">developer.twitter.com</a></p>
+                            </li>
+                            <li>
+                                <strong>Select Your App</strong>
+                                <p>Choose the app you want to upgrade</p>
+                            </li>
+                            <li>
+                                <strong>Apply for Elevated Access</strong>
+                                <p>Fill out the application form with your use case</p>
+                            </li>
+                            <li>
+                                <strong>Wait for Approval</strong>
+                                <p>Usually takes 24-48 hours</p>
+                            </li>
+                            <li>
+                                <strong>Update Your Bot</strong>
+                                <p>No code changes needed - just restart your application</p>
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeUpgradeModal()">Close</button>
+                <a href="https://developer.twitter.com/en/portal/dashboard" target="_blank" class="btn-primary">
+                    <i class="fas fa-external-link-alt"></i>
+                    Start Upgrade Process
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
