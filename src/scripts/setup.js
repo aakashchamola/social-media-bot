@@ -121,9 +121,7 @@ console.log('\n💡 For development, use "npm run dev" to enable auto-restart');
 
 // Display API requirements
 console.log('\n🔑 Required API Credentials:');
-console.log('├── Twitter API v2 (developer.twitter.com)');
-console.log('├── Reddit API (reddit.com/prefs/apps)');
-console.log('└── Instagram Graph API (developers.facebook.com)');
+console.log('└── Twitter API v2 (developer.twitter.com)');
 
 console.log('\n🌐 API Endpoints (after starting the server):');
 console.log('├── Health Check: GET http://localhost:3000/');

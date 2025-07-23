@@ -25,12 +25,6 @@ class InteractionController {
         case 'twitter':
           result = await this.executeTwitterTask(task);
           break;
-        case 'instagram':
-          result = await this.executeInstagramTask(task);
-          break;
-        case 'facebook':
-          result = await this.executeFacebookTask(task);
-          break;
         default:
           throw new Error(`Unsupported platform: ${task.platform}`);
       }
@@ -85,65 +79,6 @@ class InteractionController {
     }
   }
 
-  // Execute Instagram-specific tasks
-  async executeInstagramTask(task) {
-    const { InstagramService } = require('../services/instagramService');
-    const instagramService = new InstagramService();
-    
-    if (!instagramService.isConfigured()) {
-      return { success: false, message: 'Instagram service not configured' };
-    }
-
-    try {
-      switch (task.type) {
-        case 'like':
-          return await instagramService.likePost(task.target);
-          
-        case 'comment':
-          return await instagramService.commentOnPost(task.target, task.action);
-          
-        case 'follow':
-          return await instagramService.followUser(task.target);
-          
-        case 'scrape':
-          return await this.scrapeInstagramData(task);
-          
-        default:
-          return { success: false, message: `Unsupported Instagram task: ${task.type}` };
-      }
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
-
-  // Execute Facebook-specific tasks
-  async executeFacebookTask(task) {
-    const { FacebookService } = require('../services/facebookService');
-    const facebookService = new FacebookService();
-    
-    if (!facebookService.isConfigured()) {
-      return { success: false, message: 'Facebook service not configured' };
-    }
-
-    try {
-      switch (task.type) {
-        case 'like':
-          return await facebookService.likePost(task.target);
-          
-        case 'comment':
-          return await facebookService.commentOnPost(task.target, task.action);
-          
-        case 'scrape':
-          return await this.scrapeFacebookData(task);
-          
-        default:
-          return { success: false, message: `Unsupported Facebook task: ${task.type}` };
-      }
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
-
   // Scrape Twitter data
   async scrapeTwitterData(task) {
     try {
@@ -161,55 +96,6 @@ class InteractionController {
       return {
         success: true,
         message: `Scraped ${data.posts?.length || 0} posts and ${data.users?.length || 0} users`,
-        data: data
-      };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
-
-  // Scrape Instagram data
-  async scrapeInstagramData(task) {
-    try {
-      const { InstagramService } = require('../services/instagramService');
-      const instagramService = new InstagramService();
-      
-      const { filters, limits } = task.metadata || {};
-      const data = await instagramService.searchPosts(task.target, {
-        maxResults: limits?.maxResults || 10,
-        ...filters
-      });
-
-      // Save scraped users
-      if (data.users && data.users.length > 0) {
-        await this.saveScrapedUsers(data.users, 'instagram');
-      }
-
-      return {
-        success: true,
-        message: `Scraped ${data.posts?.length || 0} posts`,
-        data: data
-      };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
-
-  // Scrape Facebook data
-  async scrapeFacebookData(task) {
-    try {
-      const { FacebookService } = require('../services/facebookService');
-      const facebookService = new FacebookService();
-      
-      const { filters, limits } = task.metadata || {};
-      const data = await facebookService.searchPosts(task.target, {
-        limit: limits?.maxResults || 10,
-        ...filters
-      });
-
-      return {
-        success: true,
-        message: `Scraped ${data.posts?.length || 0} posts`,
         data: data
       };
     } catch (error) {
@@ -306,10 +192,6 @@ class InteractionController {
     switch (platform) {
       case 'twitter':
         return parseInt(process.env.TWITTER_RATE_LIMIT_WINDOW) || 15;
-      case 'instagram':
-        return parseInt(process.env.INSTAGRAM_RATE_LIMIT_WINDOW) || 60;
-      case 'facebook':
-        return parseInt(process.env.FACEBOOK_RATE_LIMIT_WINDOW) || 60;
       default:
         return 15;
     }
@@ -320,10 +202,6 @@ class InteractionController {
     switch (platform) {
       case 'twitter':
         return parseInt(process.env.TWITTER_RATE_LIMIT_REQUESTS) || 300;
-      case 'instagram':
-        return parseInt(process.env.INSTAGRAM_RATE_LIMIT_REQUESTS) || 100;
-      case 'facebook':
-        return parseInt(process.env.FACEBOOK_RATE_LIMIT_REQUESTS) || 100;
       default:
         return 100;
     }

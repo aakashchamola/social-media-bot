@@ -61,10 +61,10 @@ router.post('/', async (req, res) => {
       });
     }
 
-    if (!['twitter', 'instagram', 'facebook'].includes(platform)) {
+    if (platform !== 'twitter') {
       return res.status(400).json({
         success: false,
-        message: 'Platform must be twitter, instagram, or facebook'
+        message: 'Only Twitter platform is supported'
       });
     }
 

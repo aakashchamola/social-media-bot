@@ -175,10 +175,10 @@ router.post('/', async (req, res) => {
       });
     }
 
-    if (!['twitter', 'instagram', 'facebook'].includes(platform)) {
+    if (platform !== 'twitter') {
       return res.status(400).json({
         success: false,
-        message: 'Platform must be twitter, instagram, or facebook'
+        message: 'Only Twitter platform is supported'
       });
     }
 
@@ -292,10 +292,10 @@ router.get('/platform/:platform', async (req, res) => {
       sortBy = 'followers'
     } = req.query;
 
-    if (!['twitter', 'instagram', 'facebook'].includes(platform)) {
+    if (platform !== 'twitter') {
       return res.status(400).json({
         success: false,
-        message: 'Invalid platform'
+        message: 'Only Twitter platform is supported'
       });
     }
 

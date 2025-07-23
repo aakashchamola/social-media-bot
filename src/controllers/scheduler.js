@@ -2,16 +2,12 @@ const cron = require('node-cron');
 const Post = require('../models/Post');
 const Task = require('../models/Task');
 const { TwitterService } = require('../services/twitterService');
-const { InstagramService } = require('../services/instagramService');
-const { FacebookService } = require('../services/facebookService');
 const { executeTask } = require('./interactions');
 const { scrapeData } = require('./analytics');
 
 class Scheduler {
   constructor() {
     this.twitterService = new TwitterService();
-    this.instagramService = new InstagramService();
-    this.facebookService = new FacebookService();
     this.jobs = new Map();
   }
 
@@ -106,28 +102,17 @@ class Scheduler {
   startTrendMonitoring() {
     const job = cron.schedule('0 */2 * * *', async () => {
       try {
-        console.log('📈 Monitoring trends...');
+        console.log('📈 Monitoring Twitter trends...');
         
         // Twitter trends
         if (this.twitterService.isConfigured()) {
           const twitterTrends = await this.twitterService.getTrends();
           await this.saveTrends('twitter', twitterTrends);
-        }
-
-        // Instagram trends (hashtag trending)
-        if (this.instagramService.isConfigured()) {
-          // Instagram doesn't have public trending API, but we can monitor hashtags
-          const instagramData = await this.monitorInstagramHashtags();
-          await this.saveTrends('instagram', instagramData);
-        }
-
-        // Facebook trends (page insights)
-        if (this.facebookService.isConfigured()) {
-          const facebookInsights = await this.facebookService.getPageInsights();
-          await this.saveTrends('facebook', facebookInsights);
+        } else {
+          console.log('⚠️ Twitter service not configured for trend monitoring');
         }
         
-        console.log('📊 Trend monitoring completed');
+        console.log('📊 Twitter trend monitoring completed');
       } catch (error) {
         console.error('❌ Error in trend monitoring:', error);
       }
@@ -211,32 +196,19 @@ class Scheduler {
     console.log('📊 Analytics updater started (daily at midnight)');
   }
 
-  // Publish a post to the appropriate platform
+  // Publish a post to Twitter
   async publishPost(post) {
     try {
       let result;
       
-      switch (post.platform) {
-        case 'twitter':
-          if (this.twitterService.isConfigured()) {
-            result = await this.twitterService.postTweet(post.content, { mediaUrls: post.mediaUrls });
-          }
-          break;
-          
-        case 'instagram':
-          if (this.instagramService.isConfigured()) {
-            result = await this.instagramService.createPost(post.content, post.mediaUrls);
-          }
-          break;
-
-        case 'facebook':
-          if (this.facebookService.isConfigured()) {
-            result = await this.facebookService.createPost(post.content, post.mediaUrls);
-          }
-          break;
-          
-        default:
-          throw new Error(`Unsupported platform: ${post.platform}`);
+      if (post.platform !== 'twitter') {
+        throw new Error(`Only Twitter platform is supported, got: ${post.platform}`);
+      }
+      
+      if (this.twitterService.isConfigured()) {
+        result = await this.twitterService.postTweet(post.content, { mediaUrls: post.mediaUrls });
+      } else {
+        throw new Error('Twitter service not configured');
       }
 
       if (result && result.success) {
@@ -245,13 +217,13 @@ class Scheduler {
         post.metadata = { ...post.metadata, ...result.metadata };
         await post.save();
         
-        console.log(`✅ Post published on ${post.platform}: ${post.postId}`);
+        console.log(`✅ Post published on Twitter: ${post.postId}`);
       } else {
-        console.error(`❌ Failed to publish post on ${post.platform}:`, result?.error);
+        console.error(`❌ Failed to publish post on Twitter:`, result?.error);
       }
       
     } catch (error) {
-      console.error(`❌ Error publishing post on ${post.platform}:`, error);
+      console.error(`❌ Error publishing post on Twitter:`, error);
     }
   }
 
@@ -388,48 +360,6 @@ class Scheduler {
     }
     
     return status;
-  }
-
-  // Monitor Instagram hashtags for trending content
-  async monitorInstagramHashtags() {
-    try {
-      const trendingHashtags = [
-        'technology', 'ai', 'programming', 'nodejs', 'javascript', 
-        'socialmedia', 'automation', 'tech', 'innovation', 'digitalmarketing'
-      ];
-      
-      const hashtagData = [];
-      
-      for (const hashtag of trendingHashtags.slice(0, 3)) { // Limit to avoid rate limits
-        try {
-          const posts = await this.instagramService.searchPosts(hashtag, { maxResults: 5 });
-          if (posts.success && posts.posts.length > 0) {
-            hashtagData.push({
-              hashtag: hashtag,
-              postCount: posts.totalResults || posts.posts.length,
-              posts: posts.posts.slice(0, 3), // Top 3 posts
-              timestamp: new Date().toISOString()
-            });
-          }
-        } catch (error) {
-          console.error(`❌ Error monitoring hashtag #${hashtag}:`, error.message);
-        }
-      }
-      
-      return {
-        success: true,
-        data: hashtagData,
-        source: 'instagram_hashtags',
-        timestamp: new Date().toISOString()
-      };
-    } catch (error) {
-      console.error('❌ Error monitoring Instagram hashtags:', error);
-      return {
-        success: false,
-        error: error.message,
-        data: []
-      };
-    }
   }
 }
 

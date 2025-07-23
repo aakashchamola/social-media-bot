@@ -105,8 +105,6 @@ const typeDefs = gql`
 
   enum Platform {
     TWITTER
-    INSTAGRAM
-    FACEBOOK
   }
 
   enum TaskType {
@@ -218,10 +216,9 @@ const typeDefs = gql`
     postPublished: Post!
     analyticsUpdated: Analytics!
     
-    # Platform-specific subscriptions
+    # Twitter-specific subscriptions
     twitterTaskCompleted: Task!
-    instagramPostPublished: Post!
-    facebookEngagementUpdate: Post!
+    twitterPostPublished: Post!
   }
 `;
 

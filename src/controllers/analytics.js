@@ -377,7 +377,7 @@ class AnalyticsController {
   // Get platform activity breakdown
   async getPlatformBreakdown(since) {
     try {
-      const platforms = ['twitter', 'instagram', 'facebook'];
+      const platforms = ['twitter'];
       const breakdown = {};
 
       for (const platform of platforms) {
@@ -526,16 +526,6 @@ class AnalyticsController {
         case 'twitter':
           if (this.twitterService.isConfigured()) {
             result = await this.scrapeTwitterData(task);
-          }
-          break;
-        case 'instagram':
-          if (this.instagramService.isConfigured()) {
-            result = await this.scrapeInstagramData(task);
-          }
-          break;
-        case 'facebook':
-          if (this.facebookService.isConfigured()) {
-            result = await this.scrapeFacebookData(task);
           }
           break;
         default:

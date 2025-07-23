@@ -57,7 +57,7 @@ const options = {
             },
             platform: {
               type: 'string',
-              enum: ['twitter', 'instagram', 'facebook'],
+              enum: ['twitter'],
               description: 'Target social media platform',
             },
             scheduledTime: {
@@ -119,7 +119,7 @@ const options = {
             },
             platform: {
               type: 'string',
-              enum: ['twitter', 'instagram', 'facebook'],
+              enum: ['twitter'],
               description: 'Target social media platform',
             },
             target: {
@@ -177,7 +177,7 @@ const options = {
             },
             platform: {
               type: 'string',
-              enum: ['twitter', 'instagram', 'facebook'],
+              enum: ['twitter'],
               description: 'Social media platform',
             },
             userId: {

@@ -250,3 +250,7 @@
 {"component":"database","level":"info","message":"Database connection established","service":"social-media-bot","timestamp":"2025-07-22T13:09:09.502Z","version":"1.0.0"}
 {"component":"scheduler","level":"info","message":"All schedulers initialized","service":"social-media-bot","timestamp":"2025-07-22T13:09:09.537Z","version":"1.0.0"}
 {"documentation":"http://localhost:3000/api-docs","environment":"development","graphql":"http://localhost:3000/graphql","health":"http://localhost:3000/","level":"info","message":"🚀 Social Media Bot Server running on port 3000","port":"3000","service":"social-media-bot","timestamp":"2025-07-22T13:09:09.538Z","version":"1.0.0"}
+{"level":"info","message":"🚀 Starting Social Media Bot Server...","service":"social-media-bot","timestamp":"2025-07-23T15:44:18.305Z","version":"1.0.0"}
+{"component":"database","level":"info","message":"Database connection established","service":"social-media-bot","timestamp":"2025-07-23T15:44:18.344Z","version":"1.0.0"}
+{"component":"scheduler","level":"info","message":"All schedulers initialized","service":"social-media-bot","timestamp":"2025-07-23T15:44:18.378Z","version":"1.0.0"}
+{"documentation":"http://localhost:3000/api-docs","environment":"development","graphql":"http://localhost:3000/graphql","health":"http://localhost:3000/","level":"info","message":"🚀 Social Media Bot Server running on port 3000","port":"3000","service":"social-media-bot","timestamp":"2025-07-23T15:44:18.379Z","version":"1.0.0"}

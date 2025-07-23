@@ -9,7 +9,7 @@ const postSchema = new mongoose.Schema({
   platform: {
     type: String,
     required: true,
-    enum: ['twitter', 'reddit', 'instagram', 'facebook'],
+    enum: ['twitter'],
     default: 'twitter'
   },
   scheduledTime: {

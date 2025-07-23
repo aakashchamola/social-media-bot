@@ -1,16 +1,16 @@
-# 🤖 Social Media Bot Server
+# 🐦 Twitter Bot Server
 
-A powerful Node.js server that acts as a social media automation bot for Twitter, Instagram, and Facebook. Features include scheduled posting, automated interactions, data scraping, trend monitoring, and comprehensive analytics.
+A powerful Node.js server that acts as a Twitter automation bot. Features include scheduled posting, automated interactions, data scraping, trend monitoring, and comprehensive analytics.
 
 ## 🌟 Features
 
-- ✅ **Scheduled Posting** - Automate content publishing across platforms
+- ✅ **Scheduled Posting** - Automate Twitter content publishing
 - ✅ **Automated Interactions** - Like, comment, follow, and retweet automatically
-- ✅ **Data Scraping** - Collect and analyze social media data
+- ✅ **Data Scraping** - Collect and analyze Twitter data
 - ✅ **Trend Monitoring** - Track trending topics and hashtags
-- ✅ **Analytics & Reporting** - Comprehensive metrics and insights
-- ✅ **Multi-Platform Support** - Twitter, Instagram, and Facebook
-- ✅ **Rate Limiting** - Respects API limits and platform rules
+- ✅ **Analytics & Reporting** - Comprehensive Twitter metrics and insights
+- ✅ **Twitter API Integration** - Full Twitter API v2 and v1.1 support
+- ✅ **Rate Limiting** - Respects Twitter API limits and platform rules
 - ✅ **RESTful API** - Easy integration with web interfaces
 
 ## 🛠️ Tech Stack
@@ -19,7 +19,7 @@ A powerful Node.js server that acts as a social media automation bot for Twitter
 - **Database**: MongoDB with Mongoose
 - **Scheduler**: node-cron for automated tasks
 - **HTTP Client**: Axios for API requests
-- **Social Media APIs**: Twitter API v2, Instagram Graph API, Facebook Graph API
+- **Social Media APIs**: Twitter API v2 and v1.1
 
 ## 🚀 Quick Start
 
@@ -81,10 +81,7 @@ npm run test:coverage
 - **E2E Tests**: `*.e2e.test.js` - End-to-end system tests
 
 ### Platform-Specific Tests
-- Twitter: `twitter-*.test.js`
-- Instagram: `instagram-*.test.js` 
-- Facebook: `facebook-*.test.js`
-- Reddit: `reddit-*.test.js`
+- **Twitter**: `twitter-*.test.js`
 
 **Important**: All test files must be created in the `/test` directory, not in the project root.
 
@@ -108,17 +105,6 @@ TWITTER_API_SECRET=your_api_secret
 TWITTER_ACCESS_TOKEN=your_access_token
 TWITTER_ACCESS_TOKEN_SECRET=your_access_token_secret
 TWITTER_BEARER_TOKEN=your_bearer_token
-
-# Reddit API
-REDDIT_CLIENT_ID=your_client_id
-REDDIT_CLIENT_SECRET=your_client_secret
-REDDIT_USERNAME=your_username
-REDDIT_PASSWORD=your_password
-REDDIT_USER_AGENT=social-media-bot/1.0
-
-# Instagram API (optional)
-INSTAGRAM_ACCESS_TOKEN=your_access_token
-INSTAGRAM_CLIENT_ID=your_client_id
 ```
 
 ### Getting API Credentials
@@ -127,16 +113,6 @@ INSTAGRAM_CLIENT_ID=your_client_id
 1. Visit [developer.twitter.com](https://developer.twitter.com)
 2. Create a new app and get your API keys
 3. Enable API v2 access
-
-#### Reddit API
-1. Visit [reddit.com/prefs/apps](https://reddit.com/prefs/apps)
-2. Create a new "script" application
-3. Get your client ID and secret
-
-#### Instagram Graph API
-1. Visit [developers.facebook.com](https://developers.facebook.com)
-2. Create a Facebook app
-3. Add Instagram Graph API
 
 ## 📡 API Endpoints
 
@@ -236,7 +212,7 @@ The bot runs several automated processes:
 ```javascript
 {
   content: String,           // Post content
-  platform: String,          // 'twitter', 'reddit', 'instagram'
+  platform: String,          // 'twitter'
   scheduledTime: Date,       // When to publish
   posted: Boolean,           // Publication status
   postId: String,            // Platform-specific ID after posting
@@ -272,7 +248,7 @@ The bot runs several automated processes:
 ```javascript
 {
   username: String,          // Platform username
-  platform: String,          // 'twitter', 'reddit', 'instagram'
+  platform: String,          // 'twitter'
   userId: String,            // Platform-specific ID
   followers: Number,         // Follower count
   verified: Boolean,         // Verification status
@@ -314,11 +290,6 @@ The bot runs several automated processes:
    - Ensure you have API v2 access
    - Verify rate limits haven't been exceeded
 
-3. **Reddit Authentication Failed**
-   - Confirm username/password are correct
-   - Check client ID and secret
-   - Ensure user agent is properly set
-
 ### Debug Mode
 
 ```bash
@@ -351,8 +322,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Express.js Guide](https://expressjs.com/en/guide/routing.html)
 - [MongoDB Documentation](https://docs.mongodb.com/)
 - [Twitter API v2 Docs](https://developer.twitter.com/en/docs/twitter-api)
-- [Reddit API Documentation](https://www.reddit.com/dev/api/)
-
 ## 📞 Support
 
 If you encounter any issues or have questions:

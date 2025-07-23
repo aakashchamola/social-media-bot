@@ -8,7 +8,9 @@ class RateLimitManager {
     this.initializeLimiters();
   }
 
-  initializeLimiters() {
+  initiali        platform: {
+          twitter: this.getPlatformLimits('twitter')
+        },iters() {
     // Global API rate limiter
     this.limiters.set('global', new RateLimiterMemory({
       keyGenerator: (req) => req.ip,
@@ -212,14 +214,6 @@ class RateLimitManager {
       twitter: {
         points: parseInt(process.env.TWITTER_RATE_LIMIT_REQUESTS) || 300,
         duration: (parseInt(process.env.TWITTER_RATE_LIMIT_WINDOW) || 15) * 60
-      },
-      instagram: {
-        points: parseInt(process.env.INSTAGRAM_RATE_LIMIT_REQUESTS) || 100,
-        duration: (parseInt(process.env.INSTAGRAM_RATE_LIMIT_WINDOW) || 60) * 60
-      },
-      facebook: {
-        points: parseInt(process.env.FACEBOOK_RATE_LIMIT_REQUESTS) || 100,
-        duration: (parseInt(process.env.FACEBOOK_RATE_LIMIT_WINDOW) || 60) * 60
       }
     };
 
@@ -295,9 +289,7 @@ class RateLimitManager {
           description: 'Authenticated user rate limit'
         },
         platforms: {
-          twitter: this.getPlatformLimits('twitter'),
-          instagram: this.getPlatformLimits('instagram'),
-          facebook: this.getPlatformLimits('facebook')
+          twitter: this.getPlatformLimits('twitter')
         },
         special: {
           auth: { limit: 5, window: '15 minutes', description: 'Authentication attempts' },

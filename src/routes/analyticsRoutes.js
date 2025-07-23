@@ -33,10 +33,10 @@ router.get('/platform/:platform', async (req, res) => {
     const { platform } = req.params;
     const { timeRange = 30 } = req.query;
 
-    if (!['twitter', 'reddit', 'instagram', 'facebook'].includes(platform)) {
+    if (platform !== 'twitter') {
       return res.status(400).json({
         success: false,
-        message: 'Invalid platform'
+        message: 'Only Twitter platform is supported'
       });
     }
 
@@ -61,14 +61,14 @@ router.get('/interactions', async (req, res) => {
   try {
     const { platform, timeRange = 24 } = req.query;
 
-    if (platform && !['twitter', 'reddit', 'instagram', 'facebook'].includes(platform)) {
+    if (platform && platform !== 'twitter') {
       return res.status(400).json({
         success: false,
-        message: 'Invalid platform'
+        message: 'Only Twitter platform is supported'
       });
     }
 
-    const platforms = platform ? [platform] : ['twitter', 'reddit', 'instagram', 'facebook'];
+    const platforms = platform ? [platform] : ['twitter'];
     const analytics = {};
 
     for (const plt of platforms) {

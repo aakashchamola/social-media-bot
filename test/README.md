@@ -12,8 +12,6 @@ This directory contains all test files for the Social Media Bot project.
 
 ### Platform-Specific Tests
 - **Twitter**: `twitter-*.test.js`
-- **Instagram**: `instagram-*.test.js`
-- **Facebook**: `facebook-*.test.js`
 
 ### Utility Tests
 - **Database**: `db-*.test.js`

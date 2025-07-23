@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema({
   platform: {
     type: String,
     required: true,
-    enum: ['twitter', 'reddit', 'instagram']
+    enum: ['twitter']
   },
   userId: {
     type: String, // Platform-specific user ID

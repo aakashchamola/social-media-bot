@@ -27,9 +27,7 @@ const resolvers = {
 
   // Platform enum mapping
   Platform: {
-    TWITTER: 'twitter',
-    INSTAGRAM: 'instagram',
-    FACEBOOK: 'facebook'
+    TWITTER: 'twitter'
   },
 
   // Task Type enum mapping
@@ -349,7 +347,7 @@ const resolvers = {
 
 // Helper functions
 async function getPlatformAnalytics(since) {
-  const platforms = ['twitter', 'instagram', 'facebook'];
+  const platforms = ['twitter'];
   const analytics = [];
   
   for (const platform of platforms) {

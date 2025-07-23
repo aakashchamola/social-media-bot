@@ -9,13 +9,9 @@ class ProjectSetup {
       'MONGO_URI',
       'TWITTER_API_KEY',
       'TWITTER_API_SECRET', 
-      'REDDIT_CLIENT_ID',
-      'REDDIT_CLIENT_SECRET',
       'JWT_SECRET'
     ];
     this.optionalEnvVars = [
-      'INSTAGRAM_APP_ID',
-      'FACEBOOK_APP_ID',
       'TWITTER_BEARER_TOKEN'
     ];
   }
@@ -83,14 +79,11 @@ class ProjectSetup {
     console.log('\n🔍 Testing API connections...\n');
     
     const results = {
-      twitter: await this.testTwitterAPI(),
-      reddit: await this.testRedditAPI(),
-      instagram: await this.testInstagramAPI(),
-      facebook: await this.testFacebookAPI()
+      twitter: await this.testTwitterAPI()
     };
 
     const successCount = Object.values(results).filter(Boolean).length;
-    console.log(`\n📊 API Test Results: ${successCount}/4 platforms connected\n`);
+    console.log(`\n📊 API Test Results: ${successCount}/1 platform connected\n`);
     
     return results;
   }
@@ -116,97 +109,6 @@ class ProjectSetup {
       console.log('❌ Twitter API: Connection failed');
       if (error.response?.status === 401) {
         console.log('   └─ Invalid credentials');
-      } else if (error.code === 'ENOTFOUND') {
-        console.log('   └─ Network error');
-      } else {
-        console.log(`   └─ ${error.message}`);
-      }
-      return false;
-    }
-  }
-
-  async testRedditAPI() {
-    try {
-      if (!process.env.REDDIT_CLIENT_ID || process.env.REDDIT_CLIENT_ID.includes('your_')) {
-        console.log('⚠️  Reddit: Credentials not configured');
-        return false;
-      }
-
-      // Test Reddit API access
-      const auth = Buffer.from(`${process.env.REDDIT_CLIENT_ID}:${process.env.REDDIT_CLIENT_SECRET}`).toString('base64');
-      
-      const response = await axios.post('https://www.reddit.com/api/v1/access_token', 
-        'grant_type=password&username=' + process.env.REDDIT_USERNAME + '&password=' + process.env.REDDIT_PASSWORD,
-        {
-          headers: {
-            'Authorization': `Basic ${auth}`,
-            'User-Agent': process.env.REDDIT_USER_AGENT || 'SocialMediaBot/1.0.0',
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          timeout: 5000
-        }
-      );
-
-      console.log('✅ Reddit API: Connected successfully');
-      return true;
-    } catch (error) {
-      console.log('❌ Reddit API: Connection failed');
-      if (error.response?.status === 401) {
-        console.log('   └─ Invalid credentials');
-      } else if (error.code === 'ENOTFOUND') {
-        console.log('   └─ Network error');
-      } else {
-        console.log(`   └─ ${error.message}`);
-      }
-      return false;
-    }
-  }
-
-  async testInstagramAPI() {
-    try {
-      if (!process.env.INSTAGRAM_APP_ID || process.env.INSTAGRAM_APP_ID.includes('your_')) {
-        console.log('⚠️  Instagram: Credentials not configured');
-        return false;
-      }
-
-      // Test Instagram Basic Display API
-      const response = await axios.get(`https://graph.instagram.com/me?fields=id,username&access_token=${process.env.INSTAGRAM_ACCESS_TOKEN}`, {
-        timeout: 5000
-      });
-
-      console.log('✅ Instagram API: Connected successfully');
-      return true;
-    } catch (error) {
-      console.log('❌ Instagram API: Connection failed');
-      if (error.response?.status === 400) {
-        console.log('   └─ Invalid access token');
-      } else if (error.code === 'ENOTFOUND') {
-        console.log('   └─ Network error');
-      } else {
-        console.log(`   └─ ${error.message}`);
-      }
-      return false;
-    }
-  }
-
-  async testFacebookAPI() {
-    try {
-      if (!process.env.FACEBOOK_APP_ID || process.env.FACEBOOK_APP_ID.includes('your_')) {
-        console.log('⚠️  Facebook: Credentials not configured');
-        return false;
-      }
-
-      // Test Facebook Graph API
-      const response = await axios.get(`https://graph.facebook.com/me?access_token=${process.env.FACEBOOK_PAGE_ACCESS_TOKEN}`, {
-        timeout: 5000
-      });
-
-      console.log('✅ Facebook API: Connected successfully');
-      return true;
-    } catch (error) {
-      console.log('❌ Facebook API: Connection failed');
-      if (error.response?.status === 400) {
-        console.log('   └─ Invalid access token');
       } else if (error.code === 'ENOTFOUND') {
         console.log('   └─ Network error');
       } else {
@@ -242,11 +144,9 @@ class ProjectSetup {
       if (userCount === 0) {
         const sampleUser = {
           username: 'bot_admin',
-          email: 'admin@socialmediabot.com',
+          email: 'admin@twitterbot.com',
           platforms: {
-            twitter: { connected: false },
-            reddit: { connected: false },
-            instagram: { connected: false }
+            twitter: { connected: false }
           },
           settings: {
             autoPost: true,
@@ -270,7 +170,7 @@ class ProjectSetup {
   }
 
   async run() {
-    console.log('🚀 Social Media Bot Setup\n');
+    console.log('🚀 Twitter Bot Setup\n');
     console.log('═'.repeat(50));
     
     // Step 1: Check environment variables
