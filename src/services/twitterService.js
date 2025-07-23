@@ -189,6 +189,39 @@ class TwitterService {
   getMockDataForEndpoint(endpoint, options = {}) {
     console.log(`🎭 Using mock data for ${endpoint}`);
     
+    // Check for tweets endpoint first (more specific)
+    if (endpoint.includes('/users/by/username/') && endpoint.includes('/tweets')) {
+      const pathParts = endpoint.split('/');
+      const usernameIndex = pathParts.indexOf('username') + 1;
+      const username = pathParts[usernameIndex];
+      const maxResults = options.maxResults || 5;
+      const mockTweets = Array.from({ length: maxResults }, (_, i) => ({
+        id: `mock_tweet_${username}_${i}`,
+        text: `Mock tweet ${i + 1} from ${username}. This would be real tweet content with proper API access. #MockData #TwitterAPI`,
+        created_at: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
+        author_id: `mock_${username}_id`,
+        public_metrics: {
+          like_count: Math.floor(Math.random() * 200),
+          retweet_count: Math.floor(Math.random() * 50),
+          reply_count: Math.floor(Math.random() * 30),
+          quote_count: Math.floor(Math.random() * 10)
+        }
+      }));
+
+      return {
+        success: true,
+        data: {
+          data: mockTweets
+        },
+        meta: {
+          result_count: mockTweets.length,
+          newest_id: mockTweets[0]?.id,
+          oldest_id: mockTweets[mockTweets.length - 1]?.id
+        }
+      };
+    }
+    
+    // Check for user profile endpoint
     if (endpoint.includes('/users/by/username/')) {
       const username = endpoint.split('/').pop();
       return {
@@ -208,33 +241,6 @@ class TwitterService {
             },
             created_at: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString()
           }
-        }
-      };
-    }
-
-    if (endpoint.includes('/users/') && endpoint.includes('/tweets')) {
-      const username = endpoint.split('/')[2];
-      const maxResults = options.maxResults || 5;
-      const mockTweets = Array.from({ length: maxResults }, (_, i) => ({
-        id: `mock_tweet_${username}_${i}`,
-        text: `Mock tweet ${i + 1} from ${username}. This would be real tweet content with proper API access. #MockData #TwitterAPI`,
-        created_at: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-        author_id: `mock_${username}_id`,
-        public_metrics: {
-          like_count: Math.floor(Math.random() * 200),
-          retweet_count: Math.floor(Math.random() * 50),
-          reply_count: Math.floor(Math.random() * 30),
-          quote_count: Math.floor(Math.random() * 10)
-        }
-      }));
-
-      return {
-        success: true,
-        tweets: mockTweets,
-        meta: {
-          result_count: mockTweets.length,
-          newest_id: mockTweets[0]?.id,
-          oldest_id: mockTweets[mockTweets.length - 1]?.id
         }
       };
     }
@@ -519,8 +525,14 @@ class TwitterService {
   async getUserTweets(username, count = 5) {
     try {
       if (!this.isConfigured()) {
-        console.log('� Mock: Getting tweets for:', username);
-        return this.getMockDataForEndpoint(`/users/by/username/${username}/tweets`);
+        console.log('🎭 Mock: Getting tweets for:', username);
+        const mockData = this.getMockDataForEndpoint(`/users/by/username/${username}/tweets`, { maxResults: count });
+        console.log('🔍 Mock data returned:', JSON.stringify(mockData, null, 2));
+        console.log('🔍 Extracting tweets from:', mockData.data?.data);
+        return {
+          success: true,
+          tweets: mockData.data.data
+        };
       }
 
       // First get user ID
@@ -528,7 +540,7 @@ class TwitterService {
       
       if (!userResult.success) {
         console.log(`⚠️ Failed to get user ID for ${username}, using mock data`);
-        const mockData = this.getMockDataForEndpoint(`/users/by/username/${username}/tweets`);
+        const mockData = this.getMockDataForEndpoint(`/users/by/username/${username}/tweets`, { maxResults: count });
         return {
           success: true,
           tweets: mockData.data.data
@@ -594,37 +606,80 @@ class TwitterService {
         };
       }
 
-      // Use search API to find users
-      const searchQuery = `from:${query} OR @${query}`;
-      const result = await this.searchTweets(searchQuery, { maxResults: options.maxResults || 5 });
-      
-      if (result.success && result.tweets.length > 0) {
-        // Extract unique user IDs from search results
-        const userIds = [...new Set(result.tweets.map(tweet => tweet.author_id))];
+      // Try to use real API, but with Essential access limitations
+      try {
+        // Use search API to find users
+        const searchQuery = `from:${query} OR @${query}`;
+        const result = await this.searchTweets(searchQuery, { maxResults: options.maxResults || 5 });
         
-        // Get detailed user info for found users
-        const userPromises = userIds.slice(0, 10).map(async (userId) => {
-          const userResult = await this.makeRequest(`/users/${userId}?user.fields=public_metrics,verified,created_at,description`);
-          return userResult.success ? userResult.data.data : null;
-        });
+        if (result.success && result.tweets && result.tweets.length > 0) {
+          // Extract unique user IDs from search results
+          const userIds = [...new Set(result.tweets.map(tweet => tweet.author_id))];
+          
+          // Get detailed user info for found users
+          const userPromises = userIds.slice(0, 10).map(async (userId) => {
+            const userResult = await this.makeRequest(`/users/${userId}?user.fields=public_metrics,verified,created_at,description`);
+            return userResult.success ? userResult.data.data : null;
+          });
 
-        const users = (await Promise.all(userPromises)).filter(user => user !== null);
+          const users = (await Promise.all(userPromises)).filter(user => user !== null);
+          
+          if (users.length > 0) {
+            return {
+              success: true,
+              users: users
+            };
+          }
+        }
         
-        return {
-          success: true,
-          users: users
-        };
-      } else {
-        // Fallback: try direct username lookup
+        // If search fails, try direct username lookup
         const directResult = await this.getUserMetrics(query);
         if (directResult.success) {
           return {
             success: true,
-            users: [directResult.user]
+            users: [directResult.user || directResult.data?.data]
           };
         }
-        return { success: true, users: [] };
+      } catch (apiError) {
+        console.log(`⚠️ API search failed for "${query}", using mock data:`, apiError.message);
       }
+
+      // Fallback to mock data for Essential access limitations
+      console.log(`🎭 Using mock user search results for "${query}"`);
+      return {
+        success: true,
+        users: [
+          {
+            id: `mock_${query}_search_1`,
+            username: `${query}_dev`,
+            name: `${query.charAt(0).toUpperCase() + query.slice(1)} Developer`,
+            description: `A developer working with ${query}. Mock profile for API access limitations.`,
+            verified: Math.random() > 0.7,
+            public_metrics: {
+              followers_count: Math.floor(Math.random() * 25000) + 1000,
+              following_count: Math.floor(Math.random() * 2000) + 100,
+              tweet_count: Math.floor(Math.random() * 5000) + 200,
+              listed_count: Math.floor(Math.random() * 100) + 10
+            },
+            created_at: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: `mock_${query}_search_2`,
+            username: `${query}_official`,
+            name: `${query.charAt(0).toUpperCase() + query.slice(1)} Team`,
+            description: `Official ${query} account. Mock profile for API access limitations.`,
+            verified: true,
+            public_metrics: {
+              followers_count: Math.floor(Math.random() * 100000) + 10000,
+              following_count: Math.floor(Math.random() * 1000) + 50,
+              tweet_count: Math.floor(Math.random() * 8000) + 500,
+              listed_count: Math.floor(Math.random() * 200) + 50
+            },
+            created_at: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString()
+          }
+        ]
+      };
+      
     } catch (error) {
       console.error('❌ Search users error:', error.message);
       return { success: false, error: error.message };

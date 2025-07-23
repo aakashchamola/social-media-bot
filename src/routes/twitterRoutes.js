@@ -159,20 +159,16 @@ router.get('/user/:username/tweets', async (req, res) => {
     
     const twitterService = new TwitterService();
     
-    const tweets = await twitterService.getUserTweets(username, {
-      maxResults: parseInt(maxResults),
-      sinceId,
-      untilId
-    });
+    const tweets = await twitterService.getUserTweets(username, parseInt(maxResults));
     
     if (tweets.success) {
       res.json({
         success: true,
         data: {
           username,
-          tweets: tweets.tweets,
-          meta: tweets.meta,
-          includes: tweets.includes
+          tweets: tweets.tweets || [],
+          meta: tweets.meta || {},
+          includes: tweets.includes || {}
         }
       });
     } else {

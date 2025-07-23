@@ -4,3 +4,5 @@ node_modules/
 .env
 .env.local
 .env.production
+work_tracker.md
+next_plan.md
