@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const path = require('path');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -18,6 +19,7 @@ const scheduleRoutes = require('./routes/scheduleRoutes');
 const userRoutes = require('./routes/userRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const interactionRoutes = require('./routes/interactionRoutes');
+const twitterRoutes = require('./routes/twitterRoutes');
 
 // Import schedulers
 const { initializeSchedulers } = require('./controllers/scheduler');
@@ -57,6 +59,9 @@ app.use(logger.getRequestLogger());
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 
+// Serve static files from public directory
+app.use(express.static('public'));
+
 // Global rate limiting
 app.use(rateLimitManager.createExpressLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -76,6 +81,7 @@ app.use('/api/schedule', rateLimitManager.createUserLimiter(50, 3600), scheduleR
 app.use('/api/users', rateLimitManager.createUserLimiter(100, 3600), userRoutes);
 app.use('/api/analytics', rateLimitManager.createUserLimiter(30, 3600), analyticsRoutes);
 app.use('/api/interact', rateLimitManager.createPlatformLimiter(), interactionRoutes);
+app.use('/api/twitter', rateLimitManager.createUserLimiter(20, 3600), twitterRoutes);
 
 // Rate limit info endpoint
 app.get('/api/rate-limits', rateLimitManager.getRateLimitInfo());
@@ -118,8 +124,13 @@ let graphqlMiddleware = null;
  *                   example: development
  */
 app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+// API health check
+app.get('/api/health', (req, res) => {
   res.json({
-    message: 'Social Media Bot Server is running!',
+    message: 'Twitter Bot Server is running!',
     timestamp: new Date().toISOString(),
     version: process.env.npm_package_version || '1.0.0',
     uptime: process.uptime(),
