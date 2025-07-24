@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitter Bot - Simple UI</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fab fa-twitter"></i>
+                <span>Twitter Bot</span>
+            </div>
+            
+            <div class="nav-links">
+                <a href="#dashboard" class="nav-link active" data-section="dashboard">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <a href="#explore" class="nav-link" data-section="explore">
+                    <i class="fas fa-search"></i> Explore
+                </a>
+            </div>
+            <div class="api-status" id="apiStatus">
+                <div class="status-indicator" id="statusIndicator">
+                    <i class="fas fa-circle"></i>
+                </div>
+                <span id="statusText">Checking...</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="content-section active">
+            <div class="section-header">
+                <h1>Twitter Bot Dashboard</h1>
+                <p>Simple UI for testing Twitter API functionality</p>
+            </div>
+
+            <!-- API Status Card -->
+            <div class="simple-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-info-circle"></i> API Status</h3>
+                </div>
+                <div class="card-content">
+                    <div class="status-display" id="apiStatusDisplay">
+                        <div class="status-item">
+                            <span class="label">Access Level:</span>
+                            <span class="value" id="accessLevel">Checking...</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="label">Rate Limit:</span>
+                            <span class="value status-good">Available</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="stats-row">
+                <div class="stat-box">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number" id="usersCount">0</div>
+                        <div class="stat-label">Users Searched</div>
+                    </div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="stat-icon">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number" id="apiCalls">0</div>
+                        <div class="stat-label">API Calls</div>
+                    </div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number" id="uptime">0s</div>
+                        <div class="stat-label">Uptime</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Available Features -->
+            <div class="simple-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-check-circle"></i> Available Features</h3>
+                </div>
+                <div class="card-content">
+                    <div class="features-list">
+                        <div class="feature-item available">
+                            <i class="fas fa-search"></i>
+                            <span>User Profile Search</span>
+                            <span class="feature-status">Available</span>
+                        </div>
+                        <div class="feature-item available">
+                            <i class="fas fa-users"></i>
+                            <span>User Discovery & Search</span>
+                            <span class="feature-status">Available</span>
+                        </div>
+                        <div class="feature-item available">
+                            <i class="fas fa-balance-scale"></i>
+                            <span>User Comparison</span>
+                            <span class="feature-status">Available</span>
+                        </div>
+                        <div class="feature-item premium">
+                            <i class="fas fa-paper-plane"></i>
+                            <span>Post Tweets</span>
+                            <span class="feature-status premium-required" onclick="showUpgradeModal()">Upgrade Required</span>
+                        </div>
+                        <div class="feature-item premium">
+                            <i class="fas fa-heart"></i>
+                            <span>Auto Interactions</span>
+                            <span class="feature-status premium-required" onclick="showUpgradeModal()">Upgrade Required</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Explore Section -->
+        <section id="explore" class="content-section">
+            <div class="section-header">
+                <h1>Explore & Test</h1>
+                <p>Test Twitter API functionality with real data</p>
+            </div>
+
+            <!-- Search Controls -->
+            <div class="search-controls">
+                <div class="search-tabs">
+                    <button class="tab-btn active" data-tab="users">
+                        <i class="fas fa-user"></i> Search Users
+                    </button>
+                    <button class="tab-btn" data-tab="compare">
+                        <i class="fas fa-balance-scale"></i> Compare Users
+                    </button>
+                </div>
+            </div>
+
+            <!-- User Search Tab -->
+            <div id="usersTab" class="tab-content active">
+                <div class="simple-card">
+                    <div class="card-header">
+                        <h3>Search Twitter Users</h3>
+                        <div class="search-mode-toggle">
+                            <button class="mode-btn active" data-mode="search" onclick="toggleSearchMode('search')">
+                                <i class="fas fa-search"></i> Search Users
+                            </button>
+                            <button class="mode-btn" data-mode="profile" onclick="toggleSearchMode('profile')">
+                                <i class="fas fa-user"></i> Get Profile
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <!-- Search Mode -->
+                        <div id="searchMode" class="search-mode active">
+                            <div class="search-input-group">
+                                <input type="text"
+                                        id="userSearchQuery"
+                                        placeholder="Search users by name or username (e.g., 'github', 'node js', 'microsoft')"
+                                        class="search-input"
+                                       onkeypress="if(event.key==='Enter') searchUsers()">
+                                <button onclick="searchUsers()" class="search-btn">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                            </div>
+                            <div class="search-examples">
+                                <span>Try: </span>
+                                <button class="example-btn" onclick="searchUsersExample('github')">github</button>
+                                <button class="example-btn" onclick="searchUsersExample('microsoft')">microsoft</button>
+                                <button class="example-btn" onclick="searchUsersExample('node js')">node js</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Profile Mode -->
+                        <div id="profileMode" class="search-mode">
+                            <div class="search-input-group">
+                                <input type="text"
+                                        id="userSearchInput"
+                                        placeholder="Enter exact username (e.g., github, nodejs)"
+                                        class="search-input"
+                                       onkeypress="if(event.key==='Enter') searchUser()">
+                                <button onclick="searchUser()" class="search-btn">
+                                    <i class="fas fa-user"></i> Get Profile
+                                </button>
+                            </div>
+                            <div class="search-examples">
+                                <span>Try: </span>
+                                <button class="example-btn" onclick="searchExample('github')">github</button>
+                                <button class="example-btn" onclick="searchExample('nodejs')">nodejs</button>
+                                <button class="example-btn" onclick="searchExample('vercel')">vercel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Search Results -->
+                <div id="searchResults" class="results-section" style="display: none;">
+                    <div class="simple-card">
+                        <div class="card-header">
+                            <h3>Search Results</h3>
+                            <button onclick="exportSearchResults()" class="export-btn">
+                                <i class="fas fa-download"></i> Export
+                            </button>
+                        </div>
+                        <div class="card-content">
+                            <div id="searchResultsList" class="search-results-list">
+                                <!-- Search results will be displayed here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- User Profile Results -->
+                <div id="userResults" class="results-section" style="display: none;">
+                    <div class="simple-card">
+                        <div class="card-header">
+                            <h3>User Profile</h3>
+                            <button onclick="exportUserData()" class="export-btn">
+                                <i class="fas fa-download"></i> Export
+                            </button>
+                        </div>
+                        <div class="card-content">
+                            <div id="userProfile" class="user-profile">
+                                <!-- User profile will be displayed here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compare Users Tab -->
+            <div id="compareTab" class="tab-content">
+                <div class="simple-card">
+                    <div class="card-header">
+                        <h3>Compare Multiple Users</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="compare-input-group">
+                            <input type="text"
+                                    id="compareUser1"
+                                    placeholder="First username"
+                                    class="compare-input">
+                            <input type="text"
+                                    id="compareUser2"
+                                    placeholder="Second username"
+                                    class="compare-input">
+                            <input type="text"
+                                    id="compareUser3"
+                                    placeholder="Third username (optional)"
+                                    class="compare-input">
+                        </div>
+                        <div class="compare-actions">
+                            <button onclick="compareUsers()" class="compare-btn">
+                                <i class="fas fa-balance-scale"></i> Compare Users
+                            </button>
+                            <button onclick="loadExampleComparison()" class="example-btn">
+                                <i class="fas fa-eye"></i> Load Example
+                            </button>
+                            <button onclick="clearComparison()" class="clear-btn">
+                                <i class="fas fa-trash"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Comparison Results -->
+                <div id="comparisonResults" class="results-section" style="display: none;">
+                    <div class="simple-card">
+                        <div class="card-header">
+                            <h3>Comparison Results</h3>
+                            <button onclick="exportComparisonData()" class="export-btn">
+                                <i class="fas fa-download"></i> Export
+                            </button>
+                        </div>
+                        <div class="card-content">
+                            <div id="comparisonDisplay" class="comparison-display">
+                                <!-- Comparison results will be displayed here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="loading-overlay" style="display: none;">
+        <div class="spinner-content">
+            <div class="spinner"></div>
+            <span>Loading...</span>
+        </div>
+    </div>
+
+    <!-- Simple Modal for Messages -->
+    <div id="messageModal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeModal()"></div>
+        <div class="modal-content simple">
+            <div class="modal-header">
+                <h3 id="modalTitle">Message</h3>
+                <button class="close-btn" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="modalMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="closeModal()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upgrade Modal -->
+    <div id="upgradeModal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeUpgradeModal()"></div>
+        <div class="modal-content upgrade">
+            <div class="modal-header">
+                <h3>API Upgrade Required</h3>
+                <button class="close-btn" onclick="closeUpgradeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="upgrade-info">
+                    <i class="fas fa-crown premium-icon-large"></i>
+                    <h4>Premium Feature</h4>
+                    <p>This feature requires Twitter API Elevated access with write permissions.</p>
+                </div>
+                <div class="upgrade-steps">
+                    <h5>To enable this feature:</h5>
+                    <ol>
+                        <li>Visit the <a href="https://developer.twitter.com/en/portal/dashboard" target="_blank">Twitter Developer Portal</a></li>
+                        <li>Apply for Elevated API Access</li>
+                        <li>Update your environment variables with new credentials</li>
+                        <li>Restart your application</li>
+                    </ol>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeUpgradeModal()">Close</button>
+                <a href="https://developer.twitter.com/en/portal/dashboard" target="_blank" class="btn-primary">
+                    <i class="fas fa-external-link-alt"></i>
+                    Open Developer Portal
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/script.js"></script>
+</body>
+</html>
