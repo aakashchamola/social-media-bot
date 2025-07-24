@@ -178,6 +178,173 @@ async function searchUser() {
     hideLoading();
 }
 
+// New function for searching multiple users
+async function searchUsers() {
+    const input = document.getElementById('userSearchQuery');
+    const query = input.value.trim();
+    
+    if (!query) {
+        showMessage('Error', 'Please enter a search query');
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const response = await fetch(`/api/twitter/search/users?q=${encodeURIComponent(query)}&maxResults=10`);
+        const searchData = await response.json();
+        
+        if (!searchData.success) {
+            hideLoading();
+            showMessage('Error', searchData.message || 'Search failed');
+            return;
+        }
+        
+        displaySearchResults(searchData.data);
+        usersSearched += searchData.data.count;
+        currentApiCalls++;
+        updateStats();
+        
+    } catch (error) {
+        console.error('Error searching users:', error);
+        showMessage('Error', 'Failed to search users');
+    }
+    
+    hideLoading();
+}
+
+function toggleSearchMode(mode) {
+    // Update mode buttons
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+    
+    // Show/hide search modes
+    document.querySelectorAll('.search-mode').forEach(modeDiv => {
+        modeDiv.classList.remove('active');
+    });
+    
+    if (mode === 'search') {
+        document.getElementById('searchMode').classList.add('active');
+        // Hide profile results, show search results if they exist
+        document.getElementById('userResults').style.display = 'none';
+    } else {
+        document.getElementById('profileMode').classList.add('active');
+        // Hide search results, show profile results if they exist
+        document.getElementById('searchResults').style.display = 'none';
+    }
+}
+
+function displaySearchResults(data) {
+    const searchResults = document.getElementById('searchResults');
+    const searchResultsList = document.getElementById('searchResultsList');
+    
+    if (!searchResults || !searchResultsList) return;
+    
+    // Clear previous results
+    searchResultsList.innerHTML = '';
+    
+    if (!data.users || data.users.length === 0) {
+        searchResultsList.innerHTML = `
+            <div class="no-results">
+                <i class="fas fa-search"></i>
+                <h4>No users found</h4>
+                <p>Try searching with different keywords</p>
+            </div>
+        `;
+        searchResults.style.display = 'block';
+        return;
+    }
+    
+    data.users.forEach(user => {
+        const resultItem = document.createElement('div');
+        resultItem.className = 'search-result-item';
+        resultItem.onclick = () => viewUserProfile(user.username);
+        
+        resultItem.innerHTML = `
+            <img src="${user.profile_image_url || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'}" 
+                 alt="${user.name}" class="search-result-avatar">
+            <div class="search-result-info">
+                <div class="search-result-name">${user.name}</div>
+                <div class="search-result-username">@${user.username}</div>
+                ${user.description ? `<div class="search-result-description">${user.description.substring(0, 120)}${user.description.length > 120 ? '...' : ''}</div>` : ''}
+            </div>
+            <div class="search-result-metrics">
+                <div class="search-result-metric">
+                    <div class="search-result-metric-value">${formatNumber(user.public_metrics?.followers_count || 0)}</div>
+                    <div class="search-result-metric-label">Followers</div>
+                </div>
+                <div class="search-result-metric">
+                    <div class="search-result-metric-value">${formatNumber(user.public_metrics?.following_count || 0)}</div>
+                    <div class="search-result-metric-label">Following</div>
+                </div>
+                <div class="search-result-metric">
+                    <div class="search-result-metric-value">${formatNumber(user.public_metrics?.tweet_count || 0)}</div>
+                    <div class="search-result-metric-label">Tweets</div>
+                </div>
+            </div>
+        `;
+        
+        searchResultsList.appendChild(resultItem);
+    });
+    
+    searchResults.style.display = 'block';
+}
+
+function searchUsersExample(query) {
+    document.getElementById('userSearchQuery').value = query;
+    searchUsers();
+}
+
+function viewUserProfile(username) {
+    // Switch to profile mode and search for the specific user
+    toggleSearchMode('profile');
+    document.getElementById('userSearchInput').value = username;
+    searchUser();
+}
+
+function exportSearchResults() {
+    const searchResultsList = document.getElementById('searchResultsList');
+    if (!searchResultsList) return;
+    
+    const results = [];
+    const resultItems = searchResultsList.querySelectorAll('.search-result-item');
+    
+    resultItems.forEach(item => {
+        const name = item.querySelector('.search-result-name')?.textContent;
+        const username = item.querySelector('.search-result-username')?.textContent;
+        const description = item.querySelector('.search-result-description')?.textContent;
+        const metrics = {};
+        
+        item.querySelectorAll('.search-result-metric').forEach(metric => {
+            const label = metric.querySelector('.search-result-metric-label')?.textContent.toLowerCase();
+            const value = metric.querySelector('.search-result-metric-value')?.textContent;
+            if (label && value) {
+                metrics[label] = value;
+            }
+        });
+        
+        results.push({
+            name,
+            username,
+            description,
+            metrics,
+            timestamp: new Date().toISOString()
+        });
+    });
+    
+    const dataStr = JSON.stringify(results, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `twitter_search_results_${new Date().toISOString().split('T')[0]}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+}
+
 function searchExample(username) {
     document.getElementById('userSearchInput').value = username;
     searchUser();
@@ -419,8 +586,46 @@ function closeModal() {
     const modal = document.getElementById('messageModal');
     if (modal) {
         modal.style.display = 'none';
+        document.body.style.overflow = 'auto'; // Re-enable scrolling
     }
 }
+
+function showUpgradeModal() {
+    const modal = document.getElementById('upgradeModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+}
+
+function closeUpgradeModal() {
+    const modal = document.getElementById('upgradeModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto'; // Re-enable scrolling
+    }
+}
+
+function showMessageModal(title, message) {
+    const modal = document.getElementById('messageModal');
+    const titleElement = document.getElementById('modalTitle');
+    const messageElement = document.getElementById('modalMessage');
+    
+    if (modal && titleElement && messageElement) {
+        titleElement.textContent = title;
+        messageElement.textContent = message;
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+}
+
+// Keyboard support for modals
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeModal();
+        closeUpgradeModal();
+    }
+});
 
 // Add some CSS for the new elements
 const additionalCSS = `
